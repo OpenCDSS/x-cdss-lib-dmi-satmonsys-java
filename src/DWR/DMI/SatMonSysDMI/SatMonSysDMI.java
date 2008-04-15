@@ -46,10 +46,8 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import RTi.DMI.DMI;
-import RTi.DMI.DMIDeleteStatement;
 import RTi.DMI.DMIUtil;
 import RTi.DMI.DMISelectStatement;
-import RTi.DMI.DMIWriteStatement;
 import RTi.DMI.DMIStatement;
 import RTi.DMI.DMIStoredProcedureData;
 
@@ -59,8 +57,6 @@ import RTi.GRTS.TSProduct;
 import RTi.TS.TSIdent;
 import RTi.TS.TSLimits;
 import RTi.TS.TSUtil;
-
-import RTi.Util.GUI.InputFilter_JPanel;
 
 import RTi.Util.IO.IOUtil;
 import RTi.Util.IO.Prop;
@@ -72,9 +68,6 @@ import RTi.Util.String.StringUtil;
 
 import RTi.Util.Time.DateTime;
 import RTi.Util.Time.DateTimeFormat;
-import RTi.Util.Time.TimeInterval;
-import RTi.Util.Time.TimeUtil;
-
 /**
 The SatMonSysDMI provides an interface to the Division of Water Resources
 Satellite Monitoring System Database.
@@ -180,9 +173,9 @@ private final int
 Alert types supported.
 */
 private final int 
-	__ALERT_UPPER_LIMIT = 0,
+	//__ALERT_UPPER_LIMIT = 0,
 	__ALERT_LOWER_LIMIT = 1,
-	__ALERT_RISING_RATE = 2,
+	//__ALERT_RISING_RATE = 2,
 	__ALERT_FALLING_RATE = 3;
 
 /**
@@ -203,28 +196,12 @@ The last DMISelectStatement executed by the DMI.  This is used for stored
 procedure connections in order that the stored procedures can be closed 
 properly.
 */
-private DMISelectStatement __lastStatement = null;
-
-/**
-The DMISelectStatement associated with the usp_Flex stored procedure.
-*/
-private DMISelectStatement __uspFlexSelectStatement = null;
-
-/**
-The stored procedure information for the usp_Flex stored procedure.
-*/
-private DMIStoredProcedureData __uspFlexStoredProcedureData = null;
+//private DMISelectStatement __lastStatement = null;
 
 /**
 The hashtable that caches stored procedure information.
 */
 private Hashtable __storedProcedureHashtable = null;
-
-/**
-Holds the relationship of views to the view numbers used internally by the
-SPFlex stored procedure.
-*/
-private Hashtable __viewNumbers = null;
 
 /**
 The currently-logged in subscriber.
@@ -234,7 +211,7 @@ private SatMonSys_AlertSubscriber __subscriber = null;
 /**
 The annotation provider name of the DMI.
 */
-private String __annotationProviderName = null;
+//private String __annotationProviderName = null;
 
 /**
 The login name of the user to log into the database.
@@ -897,8 +874,6 @@ int annotationNum) {
 		annotationNum++;
 	}
 
-	boolean thresholdNote = false;
-
 	// size is the number of alert thresholds set on the graph.  If any 
 	// have been defined, the legend is drawn as well.
 	if (size > 0) {
@@ -1215,7 +1190,6 @@ throws Exception {
 
 	int numSubProducts = product.getNumSubProducts();
 	int numData = 0;
-	PropList props = null;
 	String abbrev = null;
 	String propVal = null;
 	TSIdent ident = null;
@@ -1362,7 +1336,6 @@ throws Exception {
 	}
 
 	String subtitle = "";
-	String title = "";
 
 	int count1 = 0;
 	int count2 = 0;
@@ -1456,7 +1429,7 @@ int numSubProduct) {
 
 	// Determine the number of the first annotation to add to 
 	// the product
-	int annotationNum = product.getNumAnnotations(numSubProduct);
+	//int annotationNum = product.getNumAnnotations(numSubProduct);
 	int numData = product.getNumData(numSubProduct);
 	String abbrev;
 	TSIdent ident = null;
@@ -1511,7 +1484,6 @@ as a private constant as a mnemonic aid.
 */
 private void buildSQL (DMIStatement statement, int sqlNumber)
 throws Exception {
-	DMISelectStatement select = null;
 
 	if (canSetUpStoredProcedure(statement, sqlNumber)) {
 		// where, distinct and order by clauses can be set
@@ -1650,6 +1622,7 @@ are defined properly.
 @param controlProps the control PropList to check.
 @throws Exception if any of the properties were not defined.
 */
+/* FIXME SAM 2008-04-15 Enable if needed
 private void checkAddAnnotationControlProps(PropList controlProps) 
 throws Exception {
 	String routine = "checkAddAnnotationControlProps";
@@ -1688,7 +1661,7 @@ throws Exception {
 	}
 
 	try {
-		TSIdent ident = new TSIdent(tsid);
+		new TSIdent(tsid);
 	}
 	catch (Exception e) {
 		throw new Exception(
@@ -1708,6 +1681,7 @@ throws Exception {
 			"Invalid 'UserID' value: '" + userIDS + "'.");
 	}
 }
+*/
 
 /**
 Closes a ResultSet from a stored procedure query.  Note that in the base DMI 
@@ -1747,7 +1721,7 @@ pasted into the Query Analyzer can be printed.
 */
 public ResultSet dmiSelect(DMISelectStatement q)
 throws java.sql.SQLException {
-	__lastStatement = q;
+	//__lastStatement = q;
 	if (IOUtil.testing()) {
 		try {
 			Message.printStatus(2, "", "" 
@@ -1792,7 +1766,6 @@ Returns information about the properties of the current database.
 @return a Vector of Strings with information about the current database.
 */
 public Vector getDatabaseProperties () {
-	String routine = "SatMonSysDMI.getDatabaseProperties";
 	Vector v = new Vector();
 	v.add("SatMonSys Database Host: " + getDatabaseServer());
 	if (getODBCName() != null) {
@@ -1854,6 +1827,7 @@ hashtable.
 @return the internal number of the view used by the SPFlex stored procedure.
 @throws Exception if the view name cannot be found in the hash table.
 */
+/* FIXME SAM 2008-04-15 Enable if needed
 private String getViewNumber(String viewName) 
 throws Exception {
 	String s = (String)(__viewNumbers.get(viewName));
@@ -1863,6 +1837,7 @@ throws Exception {
 	}
 	return s;
 }
+*/
 
 /**
 Cleans up member variables.
@@ -1870,13 +1845,8 @@ Cleans up member variables.
 public void finalize()
 throws Throwable {
 	__alertLegendTypes = null;
-	__lastStatement = null;
-	__uspFlexSelectStatement = null;
-	__uspFlexStoredProcedureData = null;
 	__storedProcedureHashtable = null;
-	__viewNumbers = null;
 	__subscriber = null;
-	__annotationProviderName = null;
 	__userLogin = null;
 	__providers = null;
 	super.finalize();
@@ -1890,7 +1860,6 @@ abbreviation.
 @return the station abbreviation that corresponds to the given TSIdent.
 */
 private String lookupStationAbbrev(TSIdent tsid) {
-	String routine = "lookupStationAbbrev";
 
 	if (tsid.getInputType().equalsIgnoreCase("HydroBase")) {
 		SatMonSys_Station sta = readStationForTSIdent(tsid);
@@ -1958,7 +1927,6 @@ private final String
 Reads global data from the database.
 */
 public void readGlobalData() {
-	String routine = "readGlobalData";
 
 	__providers.add(__PROVIDER_HISTORICAL);
 	__providers.add(__PROVIDER_REALTIME);
@@ -2257,7 +2225,6 @@ proper login screen.
 */
 private void readUserData(String userLogin) 
 throws Exception {
-	String routine = "readUserData";
 	__readSubscriber = true;
 
 	if (userLogin == null) {
@@ -2330,6 +2297,7 @@ The parameters are as follows:<p>
 @return the ResultSet generated by the query.
 @throws Exception if there is an error running the stored procedure.
 */
+/* FIXME SAM 2008-04-15 Enable if needed
 private ResultSet runSPFlex(String[] parameters) 
 throws Exception {
 	if (__uspFlexStoredProcedureData == null) {
@@ -2340,7 +2308,7 @@ throws Exception {
 			__uspFlexStoredProcedureData);
 	}
 
-	__lastStatement = __uspFlexSelectStatement;
+	//__lastStatement = __uspFlexSelectStatement;
 
 	String s = "\nexec usp_Flex ";
 	for (int i = 0; i < parameters.length; i++) {
@@ -2352,13 +2320,14 @@ throws Exception {
 	}
 	return dmiSelect(__uspFlexSelectStatement);
 }
+*/
 
 /**
 Sets the annotation provider name of this DMI.
 @param name this DMI's annotation provider name.
 */
 public void setAnnotationProviderName(String name) {
-	__annotationProviderName = name;
+	//__annotationProviderName = name;
 }
 
 /**
@@ -2366,9 +2335,9 @@ Creates the hashtable that will stored the relationship of view names to the
 view numbers used internally by SPFlex, and populates the hashtable as well.
 */
 private void setupViewNumbersHashtable() {
-	long version = getDatabaseVersion();
+	//long version = getDatabaseVersion();
 
-	__viewNumbers = new Hashtable();
+	//__viewNumbers = new Hashtable();
 }
 
 /**
@@ -2385,7 +2354,6 @@ throws Exception {
 	
 	int i;
 	String s;
-	double d;
 	float f;
 	Date D;
 
@@ -2483,7 +2451,6 @@ throws Exception {
 	
 	int i;
 	String s;
-	double d;
 	boolean b;
 
 	while (rs.next()) {
@@ -2540,6 +2507,7 @@ Translates data in a ResultSet into a Vector of SatMonSys_TSData.
 @return a Vector of SatMonSys_TSData objects.
 @throws Exception if an error occurs.
 */
+/* FIXME SAM 2008-04-15 Enable if needed
 private Vector toAlertRealTimeResultsList(ResultSet rs) 
 throws Exception {
 	SatMonSys_TSData data = null;
@@ -2549,9 +2517,7 @@ throws Exception {
 	int i;
 	String s;
 	Date D = null;
-	double d;
 	float f;
-	boolean b;
 
 	while (rs.next()) {
 		index = 1;
@@ -2598,6 +2564,7 @@ throws Exception {
 
 	return v;
 }
+*/
 
 /**
 Translates data in a ResultSet into a Vector of SatMonSys_AlertSettings.
@@ -2785,7 +2752,6 @@ throws Exception {
 	Vector v = new Vector();
 	int index = 1;
 	
-	boolean b;
 	Date D;
 	double d;
 	int i;
@@ -2841,9 +2807,6 @@ throws Exception {
 	Vector v = new Vector();
 	int index = 1;
 	
-	boolean b;
-	Date D;
-	double d;
 	int i;
 	String s;
 
