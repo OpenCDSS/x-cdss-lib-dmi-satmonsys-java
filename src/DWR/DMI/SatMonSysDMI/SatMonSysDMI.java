@@ -43,6 +43,7 @@ import java.sql.ResultSet;
 
 import java.util.Date;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Vector;
 
 import RTi.DMI.DMI;
@@ -219,11 +220,11 @@ The login name of the user to log into the database.
 private String __userLogin = null;
 
 /**
-Vector of TSProductAnnotationProviders.
+List of TSProductAnnotationProviders.
 */
-private Vector __providers = new Vector();
+private List __providers = new Vector();
 
-private Vector __subtitles = new Vector();
+private List __subtitles = new Vector();
 
 /** 
 Constructor for a connection that uses an ODBC connection.
@@ -730,7 +731,7 @@ int annotationNum) {
 	// Read the settings for the given alert.  These define the lines that
 	// are drawn on the time series showing threshold levels for alerts.
 
-	Vector settingsV = null;
+	List settingsV = null;
 	try {
 		settingsV = readAlertSettingsForAlert_num(alertNum);
 	}
@@ -753,7 +754,7 @@ int annotationNum) {
 	// annotations.  Graph clipping ensures that annotations are shown
 	// only within the graph boundaries.
 
-	Vector tslist = product.getTSList();
+	List tslist = product.getTSList();
 	TSLimits limits = null;
 	try {
 		limits = TSUtil.getPeriodFromTS(tslist, TSUtil.MAX_POR);
@@ -800,7 +801,7 @@ int annotationNum) {
 	// station can have multiple alert threshold levels set on it, and
 	// this sets up annotations for them all.
 	for (int i = 0; i < size; i++) { 
-		settings = (SatMonSys_AlertSettings)settingsV.elementAt(i);
+		settings = (SatMonSys_AlertSettings)settingsV.get(i);
 
 		try {
 			start = parse.parse(settings.getStart_date());
@@ -920,7 +921,7 @@ boolean showArchiveData) {
 
 	// read archived alert data points
 
-	Vector v1 = new Vector();
+	List v1 = new Vector();
 	if (showArchiveData) {
 		try {
 			v1 = readAlertArchiveForAlert_num(alertNum);
@@ -936,7 +937,7 @@ boolean showArchiveData) {
 
 	// read current alert data points
 
-	Vector v2 = new Vector();
+	List v2 = new Vector();
 	if (showCurrentData) {
 		try {
 			v2 = readAlertCurrentConditionsForAlert_num(alertNum);
@@ -957,13 +958,13 @@ boolean showArchiveData) {
 	// currently do not support different symbols for different stations.
 	// May change in the future.
 
-	Vector dataV = new Vector();
+	List dataV = new Vector();
 	// Make sure to add the current value first (important for later)
 	for (int i = 0; i < v2.size(); i++) {
-		dataV.add(v2.elementAt(i));
+		dataV.add(v2.get(i));
 	}
 	for (int i = 0; i < v1.size(); i++) {
-		dataV.add(v1.elementAt(i));
+		dataV.add(v1.get(i));
 	}
 
 	boolean current = true;
@@ -1002,7 +1003,7 @@ boolean showArchiveData) {
 	String symbolType = null;
 
 	for (int i = 0; i < size; i++) {
-		data = (SatMonSys_AlertData)dataV.elementAt(i);
+		data = (SatMonSys_AlertData)dataV.get(i);
 		delta = false;
 		
 		current = true;
@@ -1226,12 +1227,11 @@ throws Exception {
 		// database, and is used to determine the alerts to which they
 		// are subscribed.
 
-	Vector alertSubscriptions = readAlertSubscriptionsViewForUser_id(
-		userID);
+	List alertSubscriptions = readAlertSubscriptionsViewForUser_id(userID);
 
 	Message.printDebug(1, "", "Processing TSProduct for annotations");
 
-	Vector idents = new Vector();
+	List idents = new Vector();
 
 	int annotationNum = 0;
 	String type = null;
@@ -1305,7 +1305,7 @@ throws Exception {
 			size = alertSubscriptions.size();
 			for (int k = 0; k < size; k++) {
 				view = (SatMonSys_AlertSubscriptionView)
-					alertSubscriptions.elementAt(k);
+					alertSubscriptions.get(k);
 /*
 		Message.printDebug(1, "", "Abbrev: '" + abbrev + "'");
 		Message.printDebug(1, "", "Type:   '" + type + "'");
@@ -1343,7 +1343,7 @@ throws Exception {
 
 	if (alarms) {
 		for (int i = 0; i < size; i++) {
-			s = (String)__subtitles.elementAt(i);
+			s = (String)__subtitles.get(i);
 			if (s.startsWith("ABBREV: ")) {
 				s = s.substring(8);
 				count1++;
@@ -1370,7 +1370,7 @@ throws Exception {
 	}
 	else {
 		for (int i = 0; i < size; i++) {
-			s = (String)__subtitles.elementAt(i);
+			s = (String)__subtitles.get(i);
 			if (s.startsWith("ABBREV: ")) {
 				s = s.substring(8);
 				count1++;
@@ -1739,7 +1739,7 @@ throws java.sql.SQLException {
 Returns this DMI's annotation providers.
 @return this DMI's annotation providers.
 */
-public Vector getAnnotationProviderChoices() {	
+public List getAnnotationProviderChoices() {	
 	return __providers;
 }
 
@@ -1765,8 +1765,8 @@ public SatMonSys_AlertSubscriber getCurrentSubscriber() {
 Returns information about the properties of the current database.
 @return a Vector of Strings with information about the current database.
 */
-public Vector getDatabaseProperties () {
-	Vector v = new Vector();
+public List getDatabaseProperties () {
+	List v = new Vector();
 	v.add("SatMonSys Database Host: " + getDatabaseServer());
 	if (getODBCName() != null) {
 		v.add("ODBC Data Source Name:  " +
@@ -1787,7 +1787,7 @@ public Vector getDatabaseProperties () {
 	else {
 		v.add("Annotation provider choices:");
 		for (int i = 0; i < __providers.size(); i++) {
-			v.add("   " + __providers.elementAt(i));
+			v.add("   " + __providers.get(i));
 		}
 	}
 
@@ -1905,10 +1905,10 @@ provider.
 */
 public boolean provides(String providerName) {
 	String choice = null;
-	Vector choices = getAnnotationProviderChoices();
+	List choices = getAnnotationProviderChoices();
 	int size = choices.size();
 	for (int j = 0; j < size; j++) {
-		choice = (String)choices.elementAt(j);
+		choice = (String)choices.get(j);
 		if (providerName.equals(choice)) {
 			return true;
 		}
@@ -1960,13 +1960,13 @@ Reads records from the alert packages table.
 @return a Vector of SatMonSys_AlertPackages objects.
 @throws Exception if an error occurs.
 */
-public Vector readAlertArchiveForAlert_num(int alert_num) 
+public List readAlertArchiveForAlert_num(int alert_num) 
 throws Exception {
 	DMISelectStatement q = new DMISelectStatement(this);
 	buildSQL(q, __S_ALERT_ARCHIVE);
 	q.addWhereClause("alert_num = " + alert_num);
 	ResultSet rs = dmiSelect(q);
-	Vector v = toAlertDataList(rs, __S_ALERT_ARCHIVE);
+	List v = toAlertDataList(rs, __S_ALERT_ARCHIVE);
 	closeResultSet(rs, q);
 	return v;
 }
@@ -1976,7 +1976,7 @@ Reads all records from the alert conditions for the given alert_num.
 @return a Vector of SatMonSys_AlertData objects.
 @throws Exception if an error occurs.
 */
-public Vector readAlertCurrentConditionsForAlert_num(int alert_num) 
+public List readAlertCurrentConditionsForAlert_num(int alert_num) 
 throws Exception {
 	return readAlertCurrentConditionsForAlert_num(alert_num, false);
 }
@@ -1987,14 +1987,14 @@ alert_num.
 @return a Vector of SatMonSys_AlertData objects.
 @throws Exception if an error occurs.
 */
-public Vector readAlertCurrentConditionsForAlert_num(int alert_num,
+public List readAlertCurrentConditionsForAlert_num(int alert_num,
 boolean activeOnly) 
 throws Exception {
 	DMISelectStatement q = new DMISelectStatement(this);
 	buildSQL(q, __S_ALERT_CURRENT_CONDITIONS);
 	q.addWhereClause("alert_num = " + alert_num);
 	ResultSet rs = dmiSelect(q);
-	Vector v = toAlertDataList(rs, __S_ALERT_CURRENT_CONDITIONS);
+	List v = toAlertDataList(rs, __S_ALERT_CURRENT_CONDITIONS);
 	closeResultSet(rs, q);
 
 	if (!activeOnly) {
@@ -2003,10 +2003,10 @@ throws Exception {
 
 	int size = v.size();
 
-	Vector v2 = new Vector();
+	List v2 = new Vector();
 	SatMonSys_AlertData data = null;
 	for (int i = 0; i < size; i++) {
-		data = (SatMonSys_AlertData)v.elementAt(i);
+		data = (SatMonSys_AlertData)v.get(i);
 		if (data.getAlert_status() == 0) {
 			// skip
 		}
@@ -2023,12 +2023,12 @@ Reads records from the alert packages table.
 @return a Vector of SatMonSys_AlertPackages objects.
 @throws Exception if an error occurs.
 */
-public Vector readAlertPackages() 
+public List readAlertPackages() 
 throws Exception {
 	DMISelectStatement q = new DMISelectStatement(this);
 	buildSQL(q, __S_ALERT_PACKAGES);
 	ResultSet rs = dmiSelect(q);
-	Vector v = toAlertPackagesList(rs);
+	List v = toAlertPackagesList(rs);
 	closeResultSet(rs, q);
 	return v;
 }	
@@ -2039,14 +2039,14 @@ Reads the records from the alert settings table with the given alert_num.
 @return a Vector.
 @throws Exception if an error occurs.
 */
-public Vector readAlertSettingsForAlert_num(int alert_num) 
+public List readAlertSettingsForAlert_num(int alert_num) 
 throws Exception {
 	DMISelectStatement q = new DMISelectStatement(this);
 	buildSQL(q, __S_ALERT_SETTINGS);
 	q.addWhereClause("alert_num = " + alert_num);
 	ResultSet rs = dmiSelect(q);
 	// checked stored procedure
-	Vector v = toAlertSettingsList(rs);
+	List v = toAlertSettingsList(rs);
 	closeResultSet(rs, q);
 	return v;
 }	
@@ -2056,12 +2056,12 @@ Reads records from the alert packages table.
 @return a Vector of SatMonSys_AlertPackages objects.
 @throws Exception if an error occurs.
 */
-public Vector readAlertSubscribers() 
+public List readAlertSubscribers() 
 throws Exception {
 	DMISelectStatement q = new DMISelectStatement(this);
 	buildSQL(q, __S_ALERT_SUBSCRIBERS);
 	ResultSet rs = dmiSelect(q);
-	Vector v = toAlertSubscribersList(rs);
+	List v = toAlertSubscribersList(rs);
 	closeResultSet(rs, q);
 	return v;
 }	
@@ -2071,13 +2071,13 @@ Reads records from the alert subscriptions table for the given user.
 @return a Vector of SatMonSys_AlertSubscriptionView objects.
 @throws Exception if an error occurs.
 */
-public Vector readAlertSubscriptionsViewForUser_id(int user_id) 
+public List readAlertSubscriptionsViewForUser_id(int user_id) 
 throws Exception {
 	DMISelectStatement q = new DMISelectStatement(this);
 	buildSQL(q, __S_ALERT_SUBSCRIPTIONS_VIEW_BY_USER_ID);
 	q.addWhereClause("user_id = " + user_id);
 	ResultSet rs = dmiSelect(q);
-	Vector v = toAlertSubscriptionsViewList(rs);
+	List v = toAlertSubscriptionsViewList(rs);
 	closeResultSet(rs, q);
 	return v;
 }
@@ -2092,14 +2092,14 @@ throws Exception {
 	q.addWhereClause("variable = '" + variable + "'");
 	q.addWhereClause("date_time = " + datetime);
 	ResultSet rs = dmiSelect(q);
-	Vector v = toCombinedRealTimeResults15DayArchive(rs);
+	List v = toCombinedRealTimeResults15DayArchive(rs);
 	closeResultSet(rs, q);
 	if (v.size() == 0) {
 		return null;
 	}
 	else {
 		return (SatMonSys_CombinedRealTimeResults15DayArchive)
-			v.elementAt(0);
+			v.get(0);
 	}
 }
 
@@ -2116,12 +2116,12 @@ throws Exception {
 	buildSQL(q, __S_STATION_BY_ABBREV);
 	q.addWhereClause("abbrev like '" + abbrev + "'");
 	ResultSet rs = dmiSelect(q);
-	Vector v = toStationList(rs);
+	List v = toStationList(rs);
 	closeResultSet(rs, q);
 	if (v == null || v.size() == 0) {
 		return null;
 	}
-	return (SatMonSys_Station)v.elementAt(0);
+	return (SatMonSys_Station)v.get(0);
 }
 /**
 Returns the Station record that has the given station_id.
@@ -2136,12 +2136,12 @@ throws Exception {
 	buildSQL(q, __S_STATION_BY_STATION_ID);
 	q.addWhereClause("station_id like '" + station_id + "'");
 	ResultSet rs = dmiSelect(q);
-	Vector v = toStationList(rs);
+	List v = toStationList(rs);
 	closeResultSet(rs, q);
 	if (v == null || v.size() == 0) {
 		return null;
 	}
-	return (SatMonSys_Station)v.elementAt(0);
+	return (SatMonSys_Station)v.get(0);
 }
 
 /**
@@ -2234,10 +2234,10 @@ throws Exception {
 		return;
 	}
 
-	Vector v = readAlertSubscribers();
+	List v = readAlertSubscribers();
 	SatMonSys_AlertSubscriber s = null;
 	for (int i = 0; i < v.size(); i++) {
-		s = (SatMonSys_AlertSubscriber)v.elementAt(i);
+		s = (SatMonSys_AlertSubscriber)v.get(i);
 
 		if (userLogin != null) {
 			if (s.getLogin().equals(userLogin)) {
@@ -2346,10 +2346,10 @@ Translates data in a ResultSet into a Vector of SatMonSys_AlertData.
 @return a Vector of SatMonSys_AlertData objects.
 @throws Exception if an error occurs.
 */
-private Vector toAlertDataList(ResultSet rs, int sqlNumber) 
+private List toAlertDataList(ResultSet rs, int sqlNumber) 
 throws Exception {
 	SatMonSys_AlertData data = null;
-	Vector v = new Vector();
+	List v = new Vector();
 	int index = 1;
 	
 	int i;
@@ -2443,10 +2443,10 @@ Translates data in a ResultSet into a Vector of SatMonSys_AlertPackages.
 @return a Vector of SatMonSys_AlertPackages objects.
 @throws Exception if an error occurs.
 */
-private Vector toAlertPackagesList(ResultSet rs) 
+private List toAlertPackagesList(ResultSet rs) 
 throws Exception {
 	SatMonSys_AlertPackages data = null;
-	Vector v = new Vector();
+	List v = new Vector();
 	int index = 1;
 	
 	int i;
@@ -2572,10 +2572,10 @@ Translates data in a ResultSet into a Vector of SatMonSys_AlertSettings.
 @return a Vector of SatMonSys_AlertSettings objects.
 @throws Exception if an error occurs.
 */
-private Vector toAlertSettingsList(ResultSet rs) 
+private List toAlertSettingsList(ResultSet rs) 
 throws Exception {
 	SatMonSys_AlertSettings data = null;
-	Vector v = new Vector();
+	List v = new Vector();
 	int index = 1;
 	
 	int i;
@@ -2622,10 +2622,10 @@ Translates data in a ResultSet into a Vector of SatMonSys_AlertSubscriber.
 @return a Vector of SatMonSys_AlertSubscriber objects.
 @throws Exception if an error occurs.
 */
-private Vector toAlertSubscribersList(ResultSet rs) 
+private List toAlertSubscribersList(ResultSet rs) 
 throws Exception {
 	SatMonSys_AlertSubscriber data = null;
-	Vector v = new Vector();
+	List v = new Vector();
 	int index = 1;
 	
 	int i;
@@ -2683,10 +2683,10 @@ Translates data in a ResultSet into a Vector of SatMonSys_AlertSubscriptionView.
 @return a Vector of SatMonSys_AlertSubscriptionView objects.
 @throws Exception if an error occurs.
 */
-private Vector toAlertSubscriptionsViewList(ResultSet rs) 
+private List toAlertSubscriptionsViewList(ResultSet rs) 
 throws Exception {
 	SatMonSys_AlertSubscriptionView data = null;
-	Vector v = new Vector();
+	List v = new Vector();
 	int index = 1;
 	
 	int i;
@@ -2746,10 +2746,10 @@ SatMonSys_CombinedRealTimeResults15DayArchive objects.
 @return a Vector of SatMonSys_CombinedRealTimeResults15DayArchive objects.
 @throws Exception if an error occurs.
 */
-private Vector toCombinedRealTimeResults15DayArchive(ResultSet rs) 
+private List toCombinedRealTimeResults15DayArchive(ResultSet rs) 
 throws Exception {
 	SatMonSys_CombinedRealTimeResults15DayArchive data = null;
-	Vector v = new Vector();
+	List v = new Vector();
 	int index = 1;
 	
 	Date D;
@@ -2801,10 +2801,10 @@ Translates data in a ResultSet into a Vector of SatMonSys_Station objects.
 @return a Vector of SatMonSys_Station objects.
 @throws Exception if an error occurs.
 */
-private Vector toStationList(ResultSet rs) 
+private List toStationList(ResultSet rs) 
 throws Exception {
 	SatMonSys_Station data = null;
-	Vector v = new Vector();
+	List v = new Vector();
 	int index = 1;
 	
 	int i;
