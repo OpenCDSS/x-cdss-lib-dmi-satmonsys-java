@@ -266,16 +266,12 @@ throws Exception {
 }
 
 /** 
-Constructor for a database server and database name, to use an automatically
-created URL.
+Constructor for a database server and database name, to use an automatically created URL.
 @param database_engine The database engine to use (see the DMI constructor).
-If null, default to "SQLServer2000".
-@param database_server The IP address or DSN-resolvable database server
-machine name.
-@param database_name The database name on the server.  If null, default to
-"RealTimeStreamflow".
-@param port Port number used by the database.  If negative, default to that for
-the database engine.
+If null, default to "SQLServer".
+@param database_server The IP address or DSN-resolvable database server machine name.
+@param database_name The database name on the server.  If null, default to "RealTimeStreamflow".
+@param port Port number used by the database.  If negative, default to that for the database engine.
 @param system_login If not null, this is used as the system login to make the
 connection.  If null, the default system login is used.
 @param system_password If not null, this is used as the system password to make
@@ -285,14 +281,13 @@ public SatMonSysDMI(String database_engine, String database_server,
 String database_name, int port, String system_login, String system_password)
 throws Exception {
 	// Use the default system login and password
-	super(database_engine, database_server, database_name, port,
-		system_login, system_password);
+	super(database_engine, database_server, database_name, port, system_login, system_password);
 	
 	__storedProcedureHashtable = new Hashtable();
 	
 	if (database_engine == null) {
 		// Use the default...
-		setDatabaseEngine("SQLServer2000");
+		setDatabaseEngine("SQLServer");
 	}
 
 	if (database_name == null) {
@@ -320,12 +315,9 @@ throws Exception {
 }
 
 /** 
-Constructor for a database server and database name, to use an automatically
-created URL.
-@param props a PropList containing properties controlling how to connect
-to the database.  
-REVISIT (JTS - 2005-10-12)
-fill this out explaining the properties in use
+Constructor for a database server and database name, to use an automatically created URL.
+@param props a PropList containing properties controlling how to connect to the database.  
+TODO (JTS - 2005-10-12) fill this out explaining the properties in use
 */
 public SatMonSysDMI(PropList props) 
 throws Exception {
@@ -352,23 +344,20 @@ throws Exception {
 		system_password = props.getValue("ColoradoSMS.SystemPassword");
 		portS = props.getValue("ColoradoSMS.Port");
 
-		defaultDatabase_name = props.getValue(
-			"ColoradoSMS.DefaultDatabaseName");
-		defaultServer_name = props.getValue(
-			"ColoradoSMS.DefaultServerName");
+		defaultDatabase_name = props.getValue("ColoradoSMS.DefaultDatabaseName");
+		defaultServer_name = props.getValue("ColoradoSMS.DefaultServerName");
 
 		userLogin = props.getValue("ColoradoSMS.UserLogin");
 	}
 	
 	if (database_engine == null) {
-		database_engine = "SQLServer2000";
+		database_engine = "SQLServer";
 	}
 
 	if (database_server == null) {
 		if (defaultServer_name == null) {
 			throw new Exception(
-				"No ColoradoSMS.DefaultServerName or "
-				+ "ColoradoSMS.DatabaseServer property set in "
+				"No ColoradoSMS.DefaultServerName or ColoradoSMS.DatabaseServer property set in "
 				+ "configuration file.");
 		}
 		else {
@@ -398,26 +387,24 @@ throws Exception {
 		port = StringUtil.atoi(portS);
 	}
 	else {
-		// REVISIT (JTS - 2005-12-14)
-		// change "local" to a static final string in HydroBase_Util so 
+		// TODO (JTS - 2005-12-14) change "local" to a static final string in HydroBase_Util so 
 		// that it can be referenced everywhere by a variable.
 		if (database_server.equalsIgnoreCase("local")
-		    || IOUtil.getProgramHost().equalsIgnoreCase(
-		    database_server)) {
-		    	// connecting to the local machine.  Try the MSDE 
-			// port first.
+		    || IOUtil.getProgramHost().equalsIgnoreCase(database_server)) {
+		   	// Connecting to the local machine.  Try the MSDE port first.
 			database_server = IOUtil.getProgramHost();
-			__localPorts = new int[2];
-			__localPorts[0] = 21784;
-			__localPorts[1] = 1433;
+			__localPorts = new int[3];
+			__localPorts[0] = 5758;
+			__localPorts[1] = 21784;
+			__localPorts[2] = 1433;
 			port = __localPorts[0];
 		}
 		else {
-		    	// connecting to a remote machine.  Try the SQL 
-			// Server port first.
-			__localPorts = new int[2];
+		    // Connecting to a remote machine.  Try the SQL Server port first.
+			__localPorts = new int[3];
 			__localPorts[0] = 1433;
-			__localPorts[1] = 21784;
+			__localPorts[1] = 5758;
+			__localPorts[2] = 21784;
 			port = __localPorts[0];
 		}
 	}
@@ -1883,23 +1870,26 @@ super.open() is called first in this method, prior to any other setup.
 public void open() 
 throws Exception, java.sql.SQLException {
 	if (__localPorts == null) {
+		// Use default port numbers
 		super.open();
 	}
 	else {
-		try {
-			super.open();
-		}
-		catch (Throwable t) {
-			setPort(__localPorts[1]);
-			super.open();
+		for ( int i = 0; i < __localPorts.length; i++ ) {
+			// Try each port number that could be used.
+			try {
+				setPort(__localPorts[i]);
+				super.open();
+				break;
+			}
+			catch (Throwable t) {
+			}
 		}
 	}
 	setupViewNumbersHashtable();
 }
 
 /**
-Checks to see if this TSProductAnnotationProvider interface provides the given 
-provider.
+Checks to see if this TSProductAnnotationProvider interface provides the given provider.
 @param providerName the name of the provider to check for.
 @return true if the given provider is provided, false if not.
 */
@@ -1920,14 +1910,12 @@ public boolean provides(String providerName) {
 private final String
 	__PROVIDER_HISTORICAL = "ColoradoSMS~Historical",
 	__PROVIDER_REALTIME = "ColoradoSMS~RealtimeStreamflow",
-	__PROVIDER_REALTIME_WITH_ALARMS 
-		= "ColoradoSMS~RealtimeStreamflowWithAlarms";
+	__PROVIDER_REALTIME_WITH_ALARMS = "ColoradoSMS~RealtimeStreamflowWithAlarms";
 
 /**
 Reads global data from the database.
 */
 public void readGlobalData() {
-
 	__providers.add(__PROVIDER_HISTORICAL);
 	__providers.add(__PROVIDER_REALTIME);
 	__providers.add(__PROVIDER_REALTIME_WITH_ALARMS);
