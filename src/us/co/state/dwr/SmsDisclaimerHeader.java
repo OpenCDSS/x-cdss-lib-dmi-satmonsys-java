@@ -22,6 +22,7 @@ import javax.xml.namespace.QName;
  *       &lt;sequence>
  *         &lt;element name="disclaimer" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
  *       &lt;/sequence>
+ *       &lt;anyAttribute/>
  *     &lt;/restriction>
  *   &lt;/complexContent>
  * &lt;/complexType>

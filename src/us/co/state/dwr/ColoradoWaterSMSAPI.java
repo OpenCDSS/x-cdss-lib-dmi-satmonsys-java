@@ -3,6 +3,8 @@ package us.co.state.dwr;
 import java.util.List;
 import java.util.Vector;
 
+import javax.xml.ws.Holder;
+
 import DWR.DMI.HydroBaseDMI.HydroBase_StationGeolocMeasType;
 import RTi.TS.DayTS;
 import RTi.TS.HourTS;
@@ -122,9 +124,14 @@ public static List<String> readDistinctStationVariableList ( ColoradoWaterSMS se
     Message.printStatus(2, routine, "Getting distinct list of station variable types from web service request.");
     List<String> dataTypes = new Vector();
     // This is a list, each item which is a list of variables for a station
+    Holder<SmsStatusHeader> status = new Holder<SmsStatusHeader>();
     ArrayOfStationVariables array =
-        service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(0, 0, null);
-    // Not sure how to check for error (is an exception thrown?)
+        service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(0, 0, null, status);
+    // Check for error
+    if ( status.value.getError() != null ) {
+        throw new RuntimeException ( "Error getting transmitting station variables (" +
+            status.value.getError().getErrorCode() + ": " + status.value.getError().getExceptionDescription() + ")." );
+    }
     for ( StationVariables stationVariables : array.getStationVariables() ) {
         // Each variables list has the variables for a station
         String variable = stationVariables.getVariable();
@@ -168,8 +175,14 @@ throws Exception
         readEndString = readEnd.toString();
     }
     // Get the list of matching transmitting stations...
+    Holder<SmsStatusHeader> status = new Holder<SmsStatusHeader>();
     ArrayOfStation stationArray =
-        service.getColoradoWaterSMSSoap12().getSMSTransmittingStations(divReq, wdReq, abbrevReq);
+        service.getColoradoWaterSMSSoap12().getSMSTransmittingStations(divReq, wdReq, abbrevReq, status);
+    // Check for error
+    if ( status.value.getError() != null ) {
+        throw new RuntimeException ( "Error getting transmitting stations (" +
+            status.value.getError().getErrorCode() + ": " + status.value.getError().getExceptionDescription() + ")." );
+    }
     // Loop through the stations (a bit odd that the method to return the list is singular)
     for ( Station station : stationArray.getStation() ) {
         // Get the list of variables that match the request
@@ -181,8 +194,14 @@ throws Exception
         int div = station.getDiv();
         String utmXs = station.getUTMX();
         String utmYs = station.getUTMY();
+        Holder<SmsStatusHeader> status2 = new Holder<SmsStatusHeader>();
         ArrayOfStationVariables array =
-            service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(divReq, wdReq, abbrev );
+            service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(divReq, wdReq, abbrev, status2 );
+        // Check for error
+        if ( status2.value.getError() != null ) {
+            throw new RuntimeException ( "Error getting transmitting station variables (" +
+                status2.value.getError().getErrorCode() + ": " + status2.value.getError().getExceptionDescription() + ")." );
+        }
         // Not sure how to check for error (is an exception thrown?)
         for ( StationVariables stationVariables : array.getStationVariables() ) {
             // Each variables list has the variables for a station
@@ -243,7 +262,14 @@ throws Exception
     int div = -1; // Relying on abbrev to match the station
     int wd = -1; // Relying on abbrev to match the station
     // Get the list of matching transmitting stations...
-    ArrayOfStation stationArray = service.getColoradoWaterSMSSoap12().getSMSTransmittingStations(div,wd, abbrevReq);
+    Holder<SmsStatusHeader> status = new Holder<SmsStatusHeader>();
+    ArrayOfStation stationArray =
+        service.getColoradoWaterSMSSoap12().getSMSTransmittingStations(div,wd, abbrevReq,status);
+    // Check for error
+    if ( status.value.getError() != null ) {
+        throw new RuntimeException ( "Error getting transmitting stations (" +
+            status.value.getError().getErrorCode() + ": " + status.value.getError().getExceptionDescription() + ")." );
+    }
     // Leave this in to allow wild-carding of abbreviation parts, etc., but it will result in
     // a performance hit.
     // Loop through the stations (a bit odd that the method to return the list is singular)
@@ -252,8 +278,14 @@ throws Exception
         // This is a list, each item which is a list of variables for a station
         String abbrev = station.getAbbrev();
         String dataProvider = station.getDataProviderAbbrev();
+        Holder<SmsStatusHeader> status2 = new Holder<SmsStatusHeader>();
         ArrayOfStationVariables array =
-            service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(div, wd, abbrev );
+            service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(div, wd, abbrev, status2 );
+        // Check for error
+        if ( status2.value.getError() != null ) {
+            throw new RuntimeException ( "Error getting transmitting station variables (" +
+                status2.value.getError().getErrorCode() + ": " + status2.value.getError().getExceptionDescription() + ")." );
+        }
         // Not sure how to check for error (is an exception thrown?)
         for ( StationVariables stationVariables : array.getStationVariables() ) {
             // Each variables list has the variables for a station
@@ -297,9 +329,16 @@ throws Exception
                     Message.printStatus (2, routine, "Reading time series \"" + tsidentString + "\" for readStart=" +
                         readStart + " readEnd=" + readEnd );
                     // Specify the aggregation interval if specified (otherwise get the raw data).
+                    Holder<SmsStatusHeader> status3 = new Holder<SmsStatusHeader>();
+                    Holder<SmsDisclaimerHeader> disclaimer = new Holder<SmsDisclaimerHeader>();
                     ArrayOfStreamflowTransmission dataRecords =
                         service.getColoradoWaterSMSSoap12().getSMSProvisionalData(abbrev, variable,
-                        readStartString, readEndString, aggregation );
+                        readStartString, readEndString, aggregation, disclaimer, status3 );
+                    // Check for error
+                    if ( status3.value.getError() != null ) {
+                        throw new RuntimeException ( "Error getting provisional data (" +
+                            status3.value.getError().getErrorCode() + ": " + status3.value.getError().getExceptionDescription() + ")." );
+                    }
                     int dataRecordsSize = 0;
                     if ( dataRecords != null ) {
                         dataRecordsSize = dataRecords.getStreamflowTransmission().size();
@@ -350,6 +389,7 @@ TODO SAM 2009-11-23 May not be used since readTimeSeriesHeaderObjects is used fo
 single ReadTimeSeries is used for single time series/
 Read a list of time series.
 */
+/*
 public static List<TS> readTimeSeriesList ( ColoradoWaterSMS service, int wd, int div,
     String abbrevReq, String stationNameReq, String dataProviderReq, String dataType,
     String timestep, DateTime readStart, DateTime readEnd, boolean readData )
@@ -366,16 +406,28 @@ throws Exception
     }
     String aggregation = timestep;
     // Get the list of matching transmitting stations...
+    Holder<SmsStatusHeader> status = new Holder<SmsStatusHeader>();
     ArrayOfStation stationArray =
-        service.getColoradoWaterSMSSoap12().getSMSTransmittingStations(div, wd, abbrevReq);
+        service.getColoradoWaterSMSSoap12().getSMSTransmittingStations(div, wd, abbrevReq, status);
+    // Check for error
+    if ( status.value.getError() != null ) {
+        throw new RuntimeException ( "Error getting transmitting stations (" +
+            status.value.getError().getErrorCode() + ": " + status.value.getError().getExceptionDescription() + ")." );
+    }
     // Loop through the stations (a bit odd that the method to return the list is singular)
     for ( Station station : stationArray.getStation() ) {
         // Get the list of variables that match the request
         // This is a list, each item which is a list of variables for a station
         String abbrev = station.getAbbrev();
         String dataProvider = station.getDataProviderAbbrev();
+        Holder<SmsStatusHeader> status2 = new Holder<SmsStatusHeader>();
         ArrayOfStationVariables array =
-            service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(div, wd, abbrev );
+            service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(div, wd, abbrev, status2 );
+        // Check for error
+        if ( status2.value.getError() != null ) {
+            throw new RuntimeException ( "Error getting transmitting station variables (" +
+                status2.value.getError().getErrorCode() + ": " + status2.value.getError().getExceptionDescription() + ")." );
+        }
         // Not sure how to check for error (is an exception thrown?)
         for ( StationVariables stationVariables : array.getStationVariables() ) {
             // Each variables list has the variables for a station
@@ -384,9 +436,16 @@ throws Exception
                 // Have a matching variable (data type)
                 // Get the provisional time series for the station and data type (variable).
                 // Specify the aggregation interval if specified (otherwise get the raw data).
+                Holder<SmsDisclaimerHeader> disclaimer = new Holder<SmsDisclaimerHeader>();
+                Holder<SmsStatusHeader> status3 = new Holder<SmsStatusHeader>();
                 ArrayOfStreamflowTransmission dataRecords =
                     service.getColoradoWaterSMSSoap12().getSMSProvisionalData(abbrev, variable,
-                    readStartString, readEndString, aggregation );
+                    readStartString, readEndString, aggregation, disclaimer, status3 );
+                // Check for error
+                if ( status3.value.getError() != null ) {
+                    throw new RuntimeException ( "Error getting provisional data (" +
+                        status3.value.getError().getErrorCode() + ": " + status3.value.getError().getExceptionDescription() + ")." );
+                }
                 int dataRecordsSize = 0;
                 if ( dataRecords != null ) {
                     dataRecordsSize = dataRecords.getStreamflowTransmission().size();
@@ -442,6 +501,7 @@ throws Exception
     }
     return tslist;
 }
+*/
 
 /**
 Set the cache of distinct station variables.
