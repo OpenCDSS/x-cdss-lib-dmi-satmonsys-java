@@ -128,7 +128,7 @@ public static List<String> readDistinctStationVariableList ( ColoradoWaterSMS se
     ArrayOfStationVariables array =
         service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(0, 0, null, status);
     // Check for error
-    if ( status.value.getError() != null ) {
+    if ( (status.value != null) && (status.value.getError() != null) ) {
         throw new RuntimeException ( "Error getting transmitting station variables (" +
             status.value.getError().getErrorCode() + ": " + status.value.getError().getExceptionDescription() + ")." );
     }
@@ -179,7 +179,7 @@ throws Exception
     ArrayOfStation stationArray =
         service.getColoradoWaterSMSSoap12().getSMSTransmittingStations(divReq, wdReq, abbrevReq, status);
     // Check for error
-    if ( status.value.getError() != null ) {
+    if ( (status.value != null) && (status.value.getError() != null) ) {
         throw new RuntimeException ( "Error getting transmitting stations (" +
             status.value.getError().getErrorCode() + ": " + status.value.getError().getExceptionDescription() + ")." );
     }
@@ -198,7 +198,7 @@ throws Exception
         ArrayOfStationVariables array =
             service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(divReq, wdReq, abbrev, status2 );
         // Check for error
-        if ( status2.value.getError() != null ) {
+        if ( (status2.value != null) && (status2.value.getError() != null) ) {
             throw new RuntimeException ( "Error getting transmitting station variables (" +
                 status2.value.getError().getErrorCode() + ": " + status2.value.getError().getExceptionDescription() + ")." );
         }
@@ -266,7 +266,7 @@ throws Exception
     ArrayOfStation stationArray =
         service.getColoradoWaterSMSSoap12().getSMSTransmittingStations(div,wd, abbrevReq,status);
     // Check for error
-    if ( status.value.getError() != null ) {
+    if ( (status.value != null) && (status.value.getError() != null) ) {
         throw new RuntimeException ( "Error getting transmitting stations (" +
             status.value.getError().getErrorCode() + ": " + status.value.getError().getExceptionDescription() + ")." );
     }
@@ -282,7 +282,7 @@ throws Exception
         ArrayOfStationVariables array =
             service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(div, wd, abbrev, status2 );
         // Check for error
-        if ( status2.value.getError() != null ) {
+        if ( (status2.value != null) && (status2.value.getError() != null) ) {
             throw new RuntimeException ( "Error getting transmitting station variables (" +
                 status2.value.getError().getErrorCode() + ": " + status2.value.getError().getExceptionDescription() + ")." );
         }
@@ -335,7 +335,7 @@ throws Exception
                         service.getColoradoWaterSMSSoap12().getSMSProvisionalData(abbrev, variable,
                         readStartString, readEndString, aggregation, disclaimer, status3 );
                     // Check for error
-                    if ( status3.value.getError() != null ) {
+                    if ( (status3.value != null) && (status3.value.getError() != null) ) {
                         throw new RuntimeException ( "Error getting provisional data (" +
                             status3.value.getError().getErrorCode() + ": " + status3.value.getError().getExceptionDescription() + ")." );
                     }
