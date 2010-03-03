@@ -44,6 +44,29 @@ private static List<String> getDistinctStationVariableListCache ()
     return __distinctStationVariableList;
 }
 
+// TODO SAM 2010-03-03 Need to get units from web service when available
+/**
+Lookup the data units for a time series given the variable.  This is needed because the web service
+does not return the units.
+@param variable data variable (data type) for which to determine units.
+*/
+private static String lookupDataUnitsForVariable(String variable)
+{
+    if ( variable.equalsIgnoreCase("AIRTEMP") || variable.equalsIgnoreCase("WATTEMP") ) {
+        return "DEGF";
+    }
+    else if ( StringUtil.indexOfIgnoreCase(variable,"DISCHRG",0) >= 0 ) {
+        return "CFS";
+    }
+    else if ( variable.equalsIgnoreCase("ELEV") ||
+        (StringUtil.indexOfIgnoreCase(variable,"GAGE_HT",0) >= 0) ) {
+        return "FT";
+    }
+    else {
+        return "";
+    }
+}
+
 /**
 Parse a transmission date/time, of the format m/d/yyyy hh:mm:ss am/pm
 @param transDateTime transmission date/time string
@@ -229,6 +252,7 @@ throws Exception
                 mt.setData_source(dataProvider);
                 mt.setWD ( wd );
                 mt.setDiv ( div );
+                mt.setData_units( lookupDataUnitsForVariable(variable));
                 if ( StringUtil.isDouble(utmXs) ) {
                     mt.setUtm_x(Double.parseDouble(utmXs));
                 }
@@ -310,6 +334,8 @@ throws Exception
                 //tslist.add ( ts );
                 // Set the identifier information
                 ts.setIdentifier(tsident);
+                ts.setDataUnits( lookupDataUnitsForVariable(variable));
+                ts.setDataUnitsOriginal( lookupDataUnitsForVariable(variable));
                 if ( readData ) {
                     // Dates are used below.  Don't require for !readData because this may break some
                     // discovery reads that depend on run-time date/times.
@@ -318,16 +344,28 @@ throws Exception
                     }
                     // Remove time zone if set
                     readStart = new DateTime(readStart);
+                    if ( intervalBase == TimeInterval.HOUR ) {
+                        // The date string actually needs to have minutes
+                        // TODO SAM 2010-03-03 Remove this code and similar for readEnd if the
+                        // State corrects the handling of dates to allow YYYY-MM-DD HH
+                        readStart.setPrecision(DateTime.PRECISION_MINUTE );
+                        readStart.setMinute(0);
+                    }
                     readStart.setTimeZone("");
                     String readStartString = readStart.toString();
                     if ( readEnd == null ) {
                         throw new IllegalArgumentException ( "End date/time has not been specified." );
                     }
                     readEnd = new DateTime(readEnd);
+                    if ( intervalBase == TimeInterval.HOUR ) {
+                        // The date string actually needs to have minutes
+                        readEnd.setPrecision(DateTime.PRECISION_MINUTE );
+                        readEnd.setMinute(59);
+                    }
                     readEnd.setTimeZone("");
                     String readEndString = readEnd.toString();
                     Message.printStatus (2, routine, "Reading time series \"" + tsidentString + "\" for readStart=" +
-                        readStart + " readEnd=" + readEnd );
+                        readStartString + " readEnd=" + readEndString );
                     // Specify the aggregation interval if specified (otherwise get the raw data).
                     Holder<SmsStatusHeader> status3 = new Holder<SmsStatusHeader>();
                     Holder<SmsDisclaimerHeader> disclaimer = new Holder<SmsDisclaimerHeader>();
