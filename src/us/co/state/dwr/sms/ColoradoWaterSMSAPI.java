@@ -275,6 +275,15 @@ throws Exception
 {   String routine = "ColoradoWaterSMS.readTimeSeries";
     TS ts = null;
     
+    // If the date/times are not specified, default to the last 2 weeks
+    if ( readStart == null ) {
+        readStart = new DateTime(DateTime.DATE_CURRENT);
+        readStart.addDay(-14);
+    }
+    if ( readEnd == null ) {
+        readEnd = new DateTime(DateTime.DATE_CURRENT);
+    }
+    
     TSIdent tsident = new TSIdent ( tsidentString );
     String aggregation = tsident.getInterval();
     int intervalBase = tsident.getIntervalBase();
