@@ -203,7 +203,8 @@ throws Exception
         service.getColoradoWaterSMSSoap12().getSMSTransmittingStations(divReq, wdReq, abbrevReq, status);
     // Check for error
     if ( (status.value != null) && (status.value.getError() != null) ) {
-        throw new RuntimeException ( "Error getting transmitting stations (" +
+        throw new RuntimeException ( "Error getting transmitting stations for div=" + divReq +
+            " wdReq=" + wdReq + " abbrevReq=\"" + abbrevReq + "\" (" +
             status.value.getError().getErrorCode() + ": " + status.value.getError().getExceptionDescription() + ")." );
     }
     // Loop through the stations (a bit odd that the method to return the list is singular)
