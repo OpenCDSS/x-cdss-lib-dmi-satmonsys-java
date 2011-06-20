@@ -68,20 +68,36 @@ private static String lookupDataUnitsForVariable(String variable)
 }
 
 /**
-Parse a transmission date/time, of the format m/d/yyyy hh:mm:ss am/pm
+Parse a transmission date/time, of the format m/d/yyyy h:mm:ss am/pm
+where month, day and hour may be one or two digits.
+Also, the sequence late in the day may look like:
+<pre>
+6/7/2011 11:00:00 PM
+6/7/2011 11:15:00 PM
+6/7/2011 11:30:00 PM
+6/7/2011 11:45:00 PM
+6/8/2011 12:00:00 AM
+6/8/2011 12:15:00 AM
+6/8/2011 12:30:00 AM
+6/8/2011 12:45:00 AM
+6/8/2011 1:00:00 AM
+...
+6/8/2011 11:45:00 AM
+6/8/2011 12:00:00 PM
+6/8/2011 12:15:00 PM
+6/8/2011 12:30:00 PM
+6/8/2011 12:45:00 PM
+6/8/2011 1:00:00 PM
+</pre>
 @param transDateTime transmission date/time string
 @param datePrecision precision to create the date, matching the time series.
+@param providedDateTime If null, a new DateTime will be created.  If not null the instance will
+be reused (this saves memory).
 @return a DateTime instance parsed from the string.
 */
-public static DateTime parseTransmissionDateTime ( String transDateTime, int datePrecision )
+public static DateTime parseTransmissionDateTime ( String transDateTime, int datePrecision, DateTime providedDateTime )
 {   // First parse by spaces
     List<String> tokens = StringUtil.breakStringList(transDateTime, " ", StringUtil.DELIM_SKIP_BLANKS);
-    // Get the offset for am/pm
-    int offset = 0;
-    if ( (tokens.size() >= 3) && tokens.get(2).equalsIgnoreCase("pm") ) {
-        // Only used for real-time and hourly data, otherwise irrelevant
-        offset = 12;
-    }
     // Get the date information
     String dateToken = tokens.get(0);
     int month = 0;
@@ -106,6 +122,7 @@ public static DateTime parseTransmissionDateTime ( String transDateTime, int dat
     }
 
     // Get the time information (parts may be irrelevant if aggregation is to hour or day)
+    // Format is always h:mm
     if ( tokens.size() >= 2 ) {
         List<String> tokens2 = StringUtil.breakStringList(tokens.get(1), ":", 0);
         hour = Integer.parseInt(tokens2.get(0));
@@ -116,15 +133,43 @@ public static DateTime parseTransmissionDateTime ( String transDateTime, int dat
             second = Integer.parseInt(tokens2.get(2));
         }
     }
+    // Get the offset for am/pm
+    int offset = 0;
+    if ( tokens.size() >= 3 ) {
+        if ( tokens.get(2).equalsIgnoreCase("am") && (hour == 12)) {
+            // Input data uses hour 12 AM when it should be 12 in normalized time
+            // Only used for real-time and hourly data, otherwise irrelevant
+            hour = 0;
+        }
+        else if ( tokens.get(2).equalsIgnoreCase("pm") && (hour < 12) ) {
+            // Hours to add because 1-12 clock is used - only need to adjust 1PM+
+            // Only used for real-time and hourly data, otherwise irrelevant
+            offset = 12;
+        }
+    }
     // Now instantiate the date/time and set the information
-    DateTime dt = new DateTime(datePrecision);
-    dt.setYear(year);
-    dt.setMonth(month);
-    dt.setDay(day);
-    dt.setHour(hour + offset);
-    dt.setMinute(minute);
-    dt.setSecond(second);
-    return dt;
+    if ( providedDateTime == null ) {
+        // Create a new DateTime
+        DateTime dt = new DateTime(datePrecision);
+        dt.setYear(year);
+        dt.setMonth(month);
+        dt.setDay(day);
+        dt.setHour(hour + offset);
+        dt.setMinute(minute);
+        dt.setSecond(second);
+        return dt;
+    }
+    else {
+        // Reuse the provided DateTime instance
+        providedDateTime.setPrecision(datePrecision);
+        providedDateTime.setYear(year);
+        providedDateTime.setMonth(month);
+        providedDateTime.setDay(day);
+        providedDateTime.setHour(hour + offset);
+        providedDateTime.setMinute(minute);
+        providedDateTime.setSecond(second);
+        return providedDateTime;
+    }
 }
 
 /**
@@ -321,6 +366,7 @@ throws Exception
                 status2.value.getError().getErrorCode() + ": " + status2.value.getError().getExceptionDescription() + ")." );
         }
         // Not sure how to check for error (is an exception thrown?)
+        boolean isIrregular = false;
         for ( StationVariables stationVariables : array.getStationVariables() ) {
             // Each variables list has the variables for a station
             String variable = stationVariables.getVariable();
@@ -331,6 +377,7 @@ throws Exception
                 // FIXME SAM 2009-11-20 What are the data units?
                 if ( intervalBase == TimeInterval.IRREGULAR ) {
                     ts = new IrregularTS();
+                    isIrregular = true;
                 }
                 else if ( intervalBase == TimeInterval.DAY ) {
                     ts = new DayTS();
@@ -397,11 +444,11 @@ throws Exception
                         // Have some data records to process...
                         StreamflowTransmission dataRecord1 = dataRecords.getStreamflowTransmission().get(0);
                         //Message.printStatus(2, routine, "First record transDateTime=" + dataRecord1.getTransDateTime());
-                        ts.setDate1(parseTransmissionDateTime(dataRecord1.getTransDateTime(),0));
+                        ts.setDate1(parseTransmissionDateTime(dataRecord1.getTransDateTime(),0,null));
                         ts.setDate1Original(ts.getDate1());
                         StreamflowTransmission dataRecord2 = dataRecords.getStreamflowTransmission().get(
                             dataRecords.getStreamflowTransmission().size() - 1);
-                        ts.setDate2(parseTransmissionDateTime(dataRecord2.getTransDateTime(),0));
+                        ts.setDate2(parseTransmissionDateTime(dataRecord2.getTransDateTime(),0,null));
                         ts.setDate2Original(ts.getDate2());
                         // Transfer the data from the data records to the time series.
                         ts.allocateDataSpace();
@@ -409,7 +456,7 @@ throws Exception
                         double amount;
                         String transFlag;
                         int resultCount; // Number of values aggregated (use if limiting missing?)
-                        DateTime date;
+                        DateTime date = null;
                         int datePrecision = ts.getDate1().getPrecision();
                         for ( StreamflowTransmission dataRecord : dataRecords.getStreamflowTransmission() ) {
                             // Date format is m/d/yyyy hh:mm:ss am/pm
@@ -421,7 +468,13 @@ throws Exception
                                 Message.printDebug(10, routine, "transDateTime=" + transDateTime +
                                 " amount=" + amount + " transFlag=" + transFlag + " resultCount=" + resultCount);
                             }
-                            date = parseTransmissionDateTime ( transDateTime, datePrecision );
+                            if ( isIrregular || (date == null) ) {
+                                date = parseTransmissionDateTime ( transDateTime, datePrecision, null );
+                            }
+                            else {
+                                // Reuse the date/time
+                                date = parseTransmissionDateTime ( transDateTime, datePrecision, date );
+                            }
                             ts.setDataValue(date, amount, transFlag, 0);
                         }
                     }
