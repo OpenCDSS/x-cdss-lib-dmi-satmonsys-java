@@ -39,10 +39,32 @@ public class ColoradoWaterSMS
         COLORADOWATERSMS_WSDL_LOCATION = url;
     }
 
+    /**
+    Constructor version that calls the parent constructor that comes with the auto-generated SOAP framework.
+    This is generally only called by other versions of the constructor.
+    @param wsdlLocation
+    @param serviceName
+    */
     public ColoradoWaterSMS(URL wsdlLocation, QName serviceName) {
         super(wsdlLocation, serviceName);
     }
 
+    /**
+    Construct a SOAP object to allow API interaction.
+    This version is called when constructing a data store.
+    @param wsdlLocation the WSDL location for the ColoradoWaterSMS web service
+    @throws MalformedURLException
+    */
+    public ColoradoWaterSMS(String wsdlLocation)
+    throws MalformedURLException
+    {
+        super(new URL(us.co.state.dwr.sms.ColoradoWaterSMS.class.getResource("."),wsdlLocation), new QName("http://www.dwr.state.co.us/", "ColoradoWaterSMS"));
+    }
+
+    /**
+    This version of the constructor hard-codes the default web service location - used in older code
+    that did not allow the WSDL URL to be specified.  This will break if the State of CO moves their service.
+    */
     public ColoradoWaterSMS() {
         super(COLORADOWATERSMS_WSDL_LOCATION, new QName("http://www.dwr.state.co.us/", "ColoradoWaterSMS"));
     }
