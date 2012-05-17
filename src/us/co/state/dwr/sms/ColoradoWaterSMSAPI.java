@@ -263,6 +263,8 @@ throws Exception
         int div = station.getDiv();
         String utmXs = station.getUTMX();
         String utmYs = station.getUTMY();
+        String longitude = ""; // TODO SAM 2012-05-17 Not in object
+        String latitude = "";
         Holder<SmsStatusHeader> status2 = new Holder<SmsStatusHeader>();
         ArrayOfStationVariables array =
             service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(divReq, wdReq, abbrev, status2 );
@@ -303,7 +305,13 @@ throws Exception
                     mt.setUtm_x(Double.parseDouble(utmXs));
                 }
                 if ( StringUtil.isDouble(utmYs) ) {
-                    mt.setUtm_x(Double.parseDouble(utmYs));
+                    mt.setUtm_y(Double.parseDouble(utmYs));
+                }
+                if ( StringUtil.isDouble(longitude) ) {
+                    mt.setLongdecdeg(Double.parseDouble(longitude));
+                }
+                if ( StringUtil.isDouble(latitude) ) {
+                    mt.setLatdecdeg(Double.parseDouble(latitude));
                 }
                 tslist.add ( mt );
              }
