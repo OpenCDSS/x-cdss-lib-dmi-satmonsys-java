@@ -275,7 +275,7 @@ throws Exception
         for ( StationVariables stationVariables : array.getStationVariables() ) {
             // Each variables list has the variables for a station
             String variable = stationVariables.getVariable();
-            if ( variable.equalsIgnoreCase(dataTypeReq) ) {
+            if ( dataTypeReq.equals("*") || variable.equalsIgnoreCase(dataTypeReq) ) {
                 // Have a matching variable (data type)
                 // Get the provisional time series for the station and data type (variable).
                 // Specify the aggregation interval if specified (otherwise get the raw data).
