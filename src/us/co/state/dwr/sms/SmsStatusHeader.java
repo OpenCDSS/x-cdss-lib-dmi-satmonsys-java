@@ -9,6 +9,7 @@ import javax.xml.bind.annotation.XmlAnyAttribute;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.namespace.QName;
 
+
 /**
  * <p>Java class for SmsStatusHeader complex type.
  * 
