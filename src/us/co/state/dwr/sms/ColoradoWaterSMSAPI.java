@@ -261,6 +261,7 @@ throws Exception
         String dataProvider = station.getDataProviderAbbrev();
         int wd = station.getWd();
         int div = station.getDiv();
+        // TODO SAM 2012-07-03 County, state, HUC are not returned by service
         String utmXs = station.getUTMX();
         String utmYs = station.getUTMY();
         String longitude = ""; // TODO SAM 2012-05-17 Not in object
