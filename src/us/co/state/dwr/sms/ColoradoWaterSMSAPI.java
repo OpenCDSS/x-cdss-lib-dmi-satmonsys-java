@@ -6,6 +6,7 @@ import java.util.Vector;
 import javax.xml.ws.Holder;
 
 import DWR.DMI.HydroBaseDMI.HydroBase_StationGeolocMeasType;
+import RTi.DMI.DMIUtil;
 import RTi.TS.DayTS;
 import RTi.TS.HourTS;
 import RTi.TS.IrregularTS;
@@ -323,6 +324,12 @@ throws Exception
 
 /**
 Read a single time series.
+@param service the ColoradoWaterSMS web service instance, which provides the low-level API
+@param tsidentString the time series identifier for the requested time series
+@param readStart starting date/time to read data
+@param readEnd ending date/time to read data
+@param readData indicates whether or not to read data (false means read only metadata)
+@return the time series matching the requested time series identifier
 */
 public static TS readTimeSeries ( ColoradoWaterSMS service, String tsidentString,
     DateTime readStart, DateTime readEnd, boolean readData )
@@ -402,6 +409,47 @@ throws Exception
                 ts.setIdentifier(tsident);
                 ts.setDataUnits( lookupDataUnitsForVariable(variable));
                 ts.setDataUnitsOriginal( lookupDataUnitsForVariable(variable));
+                // Set the metadata
+                boolean setPropertiesFromMetadata = true;
+                if ( setPropertiesFromMetadata ) {
+                    // The web services return limited data.  The following code initially was copied from HydroBaseDMI
+                    // Use property names that match the web service documentation (are different than the internal
+                    // data member names)
+                    //ts.setProperty("station_num", DMIUtil.isMissing(station.getStation_num())? null : new Integer(station.getStation_num()));
+                    //ts.setProperty("geoloc_num", DMIUtil.isMissing(station.getGeoloc_num())? null : new Integer(station.getGeoloc_num()));
+                    ts.setProperty("station_name", ((station.getStationName() == null) ? "" : station.getStationName()) );
+                    //ts.setProperty("station_id", station.getStation_id());
+                    //ts.setProperty("cooperator_id", station.getCooperator_id());
+                    //ts.setProperty("nesdis_id", station.getNesdis_id());
+                    //ts.setProperty("drain_area", DMIUtil.isMissing(station.getDrain_area())? Double.NaN : new Double(station.getDrain_area()));
+                    //ts.setProperty("contr_area", DMIUtil.isMissing(station.getContr_area())? Double.NaN : new Double(station.getContr_area()));
+                    //ts.setProperty("source", station.getSource());
+                    ts.setProperty("abbrev", station.getAbbrev());
+                    //ts.setProperty("transbsn", DMIUtil.isMissing(station.getTransbsn())? null : new Integer(station.getTransbsn()));
+                    //ts.setProperty("meas_num", DMIUtil.isMissing(station.getMeas_num())? null : new Integer(station.getMeas_num()));
+                    //ts.setProperty("meas_type", station.getMeas_type());
+                    //ts.setProperty("time_step", station.getTime_step());
+                    //ts.setProperty("start_year", DMIUtil.isMissing(station.getStart_year())? null : new Integer(station.getStart_year()));
+                    //ts.setProperty("end_year", DMIUtil.isMissing(station.getEnd_year())? null : new Integer(station.getEnd_year()));
+                    //ts.setProperty("vax_field", station.getVax_field());
+                    //ts.setProperty("transmit", station.getTransmit());
+                    //ts.setProperty("meas_count", DMIUtil.isMissing(station.getMeas_count())? null : new Integer(station.getMeas_count()));
+                    ts.setProperty("data_source", ((station.getDataProviderAbbrev() == null) ? null : station.getDataProviderAbbrev()) );
+                    ts.setProperty("UTM_X", DMIUtil.isMissing(station.getUTMX())? Double.NaN : new Double(station.getUTMX()));
+                    ts.setProperty("UTM_Y", DMIUtil.isMissing(station.getUTMY())? Double.NaN : new Double(station.getUTMY()));
+                    //ts.setProperty("longdecdeg", DMIUtil.isMissing(station.getLatdecdeg())? Double.NaN : new Double(station.getLongdecdeg()));
+                    //ts.setProperty("latdecdeg", DMIUtil.isMissing(station.getLatdecdeg())? Double.NaN : new Double(station.getLatdecdeg()));
+                    ts.setProperty("div", DMIUtil.isMissing(station.getDiv())? null : new Integer(station.getDiv()));
+                    ts.setProperty("wd", DMIUtil.isMissing(station.getWd())? null : new Integer(station.getWd()));
+                    //ts.setProperty("county", station.getCounty());
+                    //ts.setProperty("topomap", station.getTopomap());
+                    //ts.setProperty("cty", DMIUtil.isMissing(station.getCty())? null : new Integer(station.getCty()));
+                    //ts.setProperty("huc", station.getHUC());
+                    //ts.setProperty("elev", DMIUtil.isMissing(station.getElev())? Double.NaN : new Double(station.getElev()));
+                    //ts.setProperty("loc_type", station.getLoc_type());
+                    //ts.setProperty("accuracy", DMIUtil.isMissing(station.getAccuracy())? null : new Integer(station.getAccuracy()));
+                    //ts.setProperty("st", station.getST());
+                }
                 if ( readData ) {
                     // Dates are used below.  Don't require for !readData because this may break some
                     // discovery reads that depend on run-time date/times.
