@@ -532,7 +532,12 @@ throws Exception
                                 // Reuse the date/time
                                 date = parseTransmissionDateTime ( transDateTime, datePrecision, date );
                             }
-                            ts.setDataValue(date, amount, transFlag, 0);
+                            if ( transFlag == null ) {
+                                ts.setDataValue(date, amount);
+                            }
+                            else {
+                                ts.setDataValue(date, amount, transFlag, 0);
+                            }
                         }
                     }
                 }
