@@ -16,7 +16,6 @@ import RTi.Util.Message.Message;
 import RTi.Util.String.StringUtil;
 import RTi.Util.Time.DateTime;
 import RTi.Util.Time.TimeInterval;
-import RTi.Util.Time.TimeUtil;
 
 /**
 API methods to simplify interaction with the ColoradoWaterSMS.
@@ -483,11 +482,18 @@ throws Exception
             Holder<SmsDisclaimerHeader> disclaimer = new Holder<SmsDisclaimerHeader>();
             // Try the following to see if issues of no data being returned improve - a bit of time
             // hopefully shows that it is not an attack on the web server
-            dataRecords =
-                service.getColoradoWaterSMSSoap12().getSMSProvisionalData(abbrev, variable,
-                readStartString, readEndString, aggregation, disclaimer, status3 );
+            try {
+                dataRecords =
+                    service.getColoradoWaterSMSSoap12().getSMSProvisionalData(abbrev, variable,
+                    readStartString, readEndString, aggregation, disclaimer, status3 );
+            }
+            catch ( Exception e ) {
+                Message.printWarning(3,routine,e);
+                status3 = null;
+                dataRecords = null; // To handle error below
+            }
             // Check for error
-            if ( (status3.value != null) && (status3.value.getError() != null) ) {
+            if ( (status3 != null) && (status3.value != null) && (status3.value.getError() != null) ) {
                 throw new RuntimeException ( "Error getting provisional data (" +
                     status3.value.getError().getErrorCode() + ": " + status3.value.getError().getExceptionDescription() + ")." );
             }
