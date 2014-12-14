@@ -16,6 +16,7 @@ import RTi.Util.Message.Message;
 import RTi.Util.String.StringUtil;
 import RTi.Util.Time.DateTime;
 import RTi.Util.Time.TimeInterval;
+import RTi.Util.Time.TimeUtil;
 
 /**
 API methods to simplify interaction with the ColoradoWaterSMS.
@@ -26,7 +27,7 @@ structure that is keyed to the server.
 */
 public class ColoradoWaterSMSAPI
 {
-    
+
 /**
 Name of this class, for messaging.
 */
@@ -334,17 +335,34 @@ Read a single time series.
 public static TS readTimeSeries ( ColoradoWaterSMS service, String tsidentString,
     DateTime readStart, DateTime readEnd, boolean readData )
 throws Exception
-{   String routine = "ColoradoWaterSMS.readTimeSeries";
+{   String routine = "ColoradoWaterSMSAPI.readTimeSeries";
     TS ts = null;
     
     // If the date/times are not specified, default to the last 2 weeks
+    // Otherwise, make a copy because time zone is removed.
+    // The web service does not like non-zero seconds.
     if ( readStart == null ) {
         readStart = new DateTime(DateTime.DATE_CURRENT);
         readStart.addDay(-14);
+        readStart.setPrecision(DateTime.PRECISION_SECOND);
+        readStart.setSecond(0);
+    }
+    else {
+        readStart = new DateTime(readStart,DateTime.PRECISION_SECOND);
+        readStart.setSecond(0);
     }
     if ( readEnd == null ) {
         readEnd = new DateTime(DateTime.DATE_CURRENT);
+        readEnd.setPrecision(DateTime.PRECISION_SECOND);
+        readEnd.setSecond(0);
     }
+    else {
+        readEnd = new DateTime(readEnd,DateTime.PRECISION_SECOND);
+        readEnd.setSecond(0);
+    }
+    // Remove time zone if set
+    readStart.setTimeZone("");
+    readEnd.setTimeZone("");
     
     TSIdent tsident = new TSIdent ( tsidentString );
     String aggregation = tsident.getInterval();
@@ -359,186 +377,175 @@ throws Exception
     // Get the list of matching transmitting stations...
     Holder<SmsStatusHeader> status = new Holder<SmsStatusHeader>();
     ArrayOfStation stationArray =
-        service.getColoradoWaterSMSSoap12().getSMSTransmittingStations(div,wd, abbrevReq,status);
+        service.getColoradoWaterSMSSoap12().getSMSTransmittingStations(div,wd,abbrevReq,status);
     // Check for error
     if ( (status.value != null) && (status.value.getError() != null) ) {
         throw new RuntimeException ( "Error getting transmitting stations (" +
             status.value.getError().getErrorCode() + ": " + status.value.getError().getExceptionDescription() + ")." );
     }
-    // Leave this in to allow wild-carding of abbreviation parts, etc., but it will result in
-    // a performance hit.
     // Loop through the stations (a bit odd that the method to return the list is singular)
     for ( Station station : stationArray.getStation() ) {
-        // Get the list of variables that match the request
-        // This is a list, each item which is a list of variables for a station
         String abbrev = station.getAbbrev();
-        String dataProvider = station.getDataProviderAbbrev();
-        Holder<SmsStatusHeader> status2 = new Holder<SmsStatusHeader>();
-        ArrayOfStationVariables array =
-            service.getColoradoWaterSMSSoap12().getSMSTransmittingStationVariables(div, wd, abbrev, status2 );
-        // Check for error
-        if ( (status2.value != null) && (status2.value.getError() != null) ) {
-            throw new RuntimeException ( "Error getting transmitting station variables (" +
-                status2.value.getError().getErrorCode() + ": " + status2.value.getError().getExceptionDescription() + ")." );
-        }
-        // Not sure how to check for error (is an exception thrown?)
+        //String dataProvider = station.getDataProviderAbbrev(); // This does not appear to be an abbreviation
         boolean isIrregular = false;
-        for ( StationVariables stationVariables : array.getStationVariables() ) {
-            // Each variables list has the variables for a station
-            String variable = stationVariables.getVariable();
-            if ( variable.equalsIgnoreCase(dataType) ) {
-                // Have a matching variable (data type)
-                // Get the provisional time series for the station and data type (variable).
-                // Define the time series and add to the list
-                // FIXME SAM 2009-11-20 What are the data units?
+        String variable = dataType;
+        // Get the provisional time series for the station and data type (variable).
+        // Define the time series and add to the list
+        if ( intervalBase == TimeInterval.IRREGULAR ) {
+            ts = new IrregularTS();
+            isIrregular = true;
+        }
+        else if ( intervalBase == TimeInterval.DAY ) {
+            ts = new DayTS();
+        }
+        else if ( intervalBase == TimeInterval.HOUR ) {
+            ts = new HourTS();
+        }
+        else {
+            throw new IllegalArgumentException ( "The interval for \"" + tsidentString + "\" is not supported.");
+        }
+        // Set the identifier information
+        // FIXME SAM 2009-11-20 What are the data units?  Not returned from web service.
+        ts.setIdentifier(tsident);
+        ts.setDataUnits( lookupDataUnitsForVariable(variable));
+        ts.setDataUnitsOriginal( ts.getDataUnits() );
+        // Set the metadata
+        boolean setPropertiesFromMetadata = true;
+        if ( setPropertiesFromMetadata ) {
+            // The web services return limited data.  The following code initially was copied from HydroBaseDMI
+            // Use property names that match the web service documentation (are different than the internal
+            // data member names)
+            //ts.setProperty("station_num", DMIUtil.isMissing(station.getStation_num())? null : new Integer(station.getStation_num()));
+            //ts.setProperty("geoloc_num", DMIUtil.isMissing(station.getGeoloc_num())? null : new Integer(station.getGeoloc_num()));
+            ts.setProperty("station_name", ((station.getStationName() == null) ? "" : station.getStationName()) );
+            //ts.setProperty("station_id", station.getStation_id());
+            //ts.setProperty("cooperator_id", station.getCooperator_id());
+            //ts.setProperty("nesdis_id", station.getNesdis_id());
+            //ts.setProperty("drain_area", DMIUtil.isMissing(station.getDrain_area())? Double.NaN : new Double(station.getDrain_area()));
+            //ts.setProperty("contr_area", DMIUtil.isMissing(station.getContr_area())? Double.NaN : new Double(station.getContr_area()));
+            //ts.setProperty("source", station.getSource());
+            ts.setProperty("abbrev", station.getAbbrev());
+            //ts.setProperty("transbsn", DMIUtil.isMissing(station.getTransbsn())? null : new Integer(station.getTransbsn()));
+            //ts.setProperty("meas_num", DMIUtil.isMissing(station.getMeas_num())? null : new Integer(station.getMeas_num()));
+            //ts.setProperty("meas_type", station.getMeas_type());
+            //ts.setProperty("time_step", station.getTime_step());
+            //ts.setProperty("start_year", DMIUtil.isMissing(station.getStart_year())? null : new Integer(station.getStart_year()));
+            //ts.setProperty("end_year", DMIUtil.isMissing(station.getEnd_year())? null : new Integer(station.getEnd_year()));
+            //ts.setProperty("vax_field", station.getVax_field());
+            //ts.setProperty("transmit", station.getTransmit());
+            //ts.setProperty("meas_count", DMIUtil.isMissing(station.getMeas_count())? null : new Integer(station.getMeas_count()));
+            ts.setProperty("data_source", ((station.getDataProviderAbbrev() == null) ? null : station.getDataProviderAbbrev()) );
+            ts.setProperty("UTM_X", DMIUtil.isMissing(station.getUTMX())? Double.NaN : new Double(station.getUTMX()));
+            ts.setProperty("UTM_Y", DMIUtil.isMissing(station.getUTMY())? Double.NaN : new Double(station.getUTMY()));
+            //ts.setProperty("longdecdeg", DMIUtil.isMissing(station.getLatdecdeg())? Double.NaN : new Double(station.getLongdecdeg()));
+            //ts.setProperty("latdecdeg", DMIUtil.isMissing(station.getLatdecdeg())? Double.NaN : new Double(station.getLatdecdeg()));
+            ts.setProperty("div", DMIUtil.isMissing(station.getDiv())? null : new Integer(station.getDiv()));
+            ts.setProperty("wd", DMIUtil.isMissing(station.getWd())? null : new Integer(station.getWd()));
+            //ts.setProperty("county", station.getCounty());
+            //ts.setProperty("topomap", station.getTopomap());
+            //ts.setProperty("cty", DMIUtil.isMissing(station.getCty())? null : new Integer(station.getCty()));
+            //ts.setProperty("huc", station.getHUC());
+            //ts.setProperty("elev", DMIUtil.isMissing(station.getElev())? Double.NaN : new Double(station.getElev()));
+            //ts.setProperty("loc_type", station.getLoc_type());
+            //ts.setProperty("accuracy", DMIUtil.isMissing(station.getAccuracy())? null : new Integer(station.getAccuracy()));
+            //ts.setProperty("st", station.getST());
+        }
+        if ( readData ) {
+            // Dates are used below.
+            /*
+            if ( intervalBase == TimeInterval.HOUR ) {
+                // The date string actually needs to have minutes
+                // TODO SAM 2010-03-03 Remove this code and similar for readEnd if the
+                // State corrects the handling of dates to allow YYYY-MM-DD HH
+                readStart.setPrecision(DateTime.PRECISION_MINUTE );
+                readStart.setMinute(0);
+            }
+            */
+            String readStartString = readStart.toString();
+            //readEnd = new DateTime(readEnd);
+            /*
+            if ( intervalBase == TimeInterval.HOUR ) {
+                // The date string actually needs to have minutes
+                readEnd.setPrecision(DateTime.PRECISION_MINUTE );
+                readEnd.setMinute(59);
+            }
+            */
+            String readEndString = readEnd.toString();
+            Message.printStatus (2, routine, "Reading time series \"" + tsidentString + "\" using getSMSProvisionalData for abbrev=\"" + abbrev + "\" variable=\"" + variable +
+                "\" readStart=" + readStartString + " readEnd=" + readEndString + " aggregation=\"" + aggregation + "\"" );
+            // Specify the aggregation interval if specified (otherwise get the raw data).
+            // Retry the call because sometimes no records come back, as if web server is denying requests
+            // that are too close together (like requests too near above station/variable calls)
+            int dataRecordsSize = 0;
+            ArrayOfStreamflowTransmission dataRecords = null;
+            dataRecordsSize = 0;
+            Holder<SmsStatusHeader> status3 = new Holder<SmsStatusHeader>();
+            Holder<SmsDisclaimerHeader> disclaimer = new Holder<SmsDisclaimerHeader>();
+            // Try the following to see if issues of no data being returned improve - a bit of time
+            // hopefully shows that it is not an attack on the web server
+            dataRecords =
+                service.getColoradoWaterSMSSoap12().getSMSProvisionalData(abbrev, variable,
+                readStartString, readEndString, aggregation, disclaimer, status3 );
+            // Check for error
+            if ( (status3.value != null) && (status3.value.getError() != null) ) {
+                throw new RuntimeException ( "Error getting provisional data (" +
+                    status3.value.getError().getErrorCode() + ": " + status3.value.getError().getExceptionDescription() + ")." );
+            }
+            if ( dataRecords != null ) {
+                dataRecordsSize = dataRecords.getStreamflowTransmission().size();
+                Message.printStatus(2, routine, "Number of data records = " + dataRecordsSize );
+            }
+            else {
+                Message.printStatus(2, routine, "Null data records array returned" );
+            }
+            // Set the period from the first and last data records
+            if ( dataRecordsSize > 0 ) {
+                // Have some data records to process...
+                StreamflowTransmission dataRecord1 = dataRecords.getStreamflowTransmission().get(0);
+                //Message.printStatus(2, routine, "First record transDateTime=" + dataRecord1.getTransDateTime());
+                ts.setDate1(parseTransmissionDateTime(dataRecord1.getTransDateTime(),0,null));
+                ts.setDate1Original(ts.getDate1());
+                StreamflowTransmission dataRecord2 = dataRecords.getStreamflowTransmission().get(
+                    dataRecords.getStreamflowTransmission().size() - 1);
+                ts.setDate2(parseTransmissionDateTime(dataRecord2.getTransDateTime(),0,null));
+                ts.setDate2Original(ts.getDate2());
                 if ( intervalBase == TimeInterval.IRREGULAR ) {
-                    ts = new IrregularTS();
-                    isIrregular = true;
+                    // Set the precision to minute since that is actually what it is
+                    ts.setDate1(new DateTime(ts.getDate1(),DateTime.PRECISION_MINUTE));
+                    ts.setDate1Original(new DateTime(ts.getDate1Original(),DateTime.PRECISION_MINUTE));
+                    ts.setDate2(new DateTime(ts.getDate2(),DateTime.PRECISION_MINUTE));
+                    ts.setDate2Original(new DateTime(ts.getDate2Original(),DateTime.PRECISION_MINUTE));
                 }
-                else if ( intervalBase == TimeInterval.DAY ) {
-                    ts = new DayTS();
-                }
-                else if ( intervalBase == TimeInterval.HOUR ) {
-                    ts = new HourTS();
-                }
-                else {
-                    throw new IllegalArgumentException ( "The interval for \"" + tsidentString + "\" is not supported.");
-                }
-                //tslist.add ( ts );
-                // Set the identifier information
-                ts.setIdentifier(tsident);
-                ts.setDataUnits( lookupDataUnitsForVariable(variable));
-                ts.setDataUnitsOriginal( lookupDataUnitsForVariable(variable));
-                // Set the metadata
-                boolean setPropertiesFromMetadata = true;
-                if ( setPropertiesFromMetadata ) {
-                    // The web services return limited data.  The following code initially was copied from HydroBaseDMI
-                    // Use property names that match the web service documentation (are different than the internal
-                    // data member names)
-                    //ts.setProperty("station_num", DMIUtil.isMissing(station.getStation_num())? null : new Integer(station.getStation_num()));
-                    //ts.setProperty("geoloc_num", DMIUtil.isMissing(station.getGeoloc_num())? null : new Integer(station.getGeoloc_num()));
-                    ts.setProperty("station_name", ((station.getStationName() == null) ? "" : station.getStationName()) );
-                    //ts.setProperty("station_id", station.getStation_id());
-                    //ts.setProperty("cooperator_id", station.getCooperator_id());
-                    //ts.setProperty("nesdis_id", station.getNesdis_id());
-                    //ts.setProperty("drain_area", DMIUtil.isMissing(station.getDrain_area())? Double.NaN : new Double(station.getDrain_area()));
-                    //ts.setProperty("contr_area", DMIUtil.isMissing(station.getContr_area())? Double.NaN : new Double(station.getContr_area()));
-                    //ts.setProperty("source", station.getSource());
-                    ts.setProperty("abbrev", station.getAbbrev());
-                    //ts.setProperty("transbsn", DMIUtil.isMissing(station.getTransbsn())? null : new Integer(station.getTransbsn()));
-                    //ts.setProperty("meas_num", DMIUtil.isMissing(station.getMeas_num())? null : new Integer(station.getMeas_num()));
-                    //ts.setProperty("meas_type", station.getMeas_type());
-                    //ts.setProperty("time_step", station.getTime_step());
-                    //ts.setProperty("start_year", DMIUtil.isMissing(station.getStart_year())? null : new Integer(station.getStart_year()));
-                    //ts.setProperty("end_year", DMIUtil.isMissing(station.getEnd_year())? null : new Integer(station.getEnd_year()));
-                    //ts.setProperty("vax_field", station.getVax_field());
-                    //ts.setProperty("transmit", station.getTransmit());
-                    //ts.setProperty("meas_count", DMIUtil.isMissing(station.getMeas_count())? null : new Integer(station.getMeas_count()));
-                    ts.setProperty("data_source", ((station.getDataProviderAbbrev() == null) ? null : station.getDataProviderAbbrev()) );
-                    ts.setProperty("UTM_X", DMIUtil.isMissing(station.getUTMX())? Double.NaN : new Double(station.getUTMX()));
-                    ts.setProperty("UTM_Y", DMIUtil.isMissing(station.getUTMY())? Double.NaN : new Double(station.getUTMY()));
-                    //ts.setProperty("longdecdeg", DMIUtil.isMissing(station.getLatdecdeg())? Double.NaN : new Double(station.getLongdecdeg()));
-                    //ts.setProperty("latdecdeg", DMIUtil.isMissing(station.getLatdecdeg())? Double.NaN : new Double(station.getLatdecdeg()));
-                    ts.setProperty("div", DMIUtil.isMissing(station.getDiv())? null : new Integer(station.getDiv()));
-                    ts.setProperty("wd", DMIUtil.isMissing(station.getWd())? null : new Integer(station.getWd()));
-                    //ts.setProperty("county", station.getCounty());
-                    //ts.setProperty("topomap", station.getTopomap());
-                    //ts.setProperty("cty", DMIUtil.isMissing(station.getCty())? null : new Integer(station.getCty()));
-                    //ts.setProperty("huc", station.getHUC());
-                    //ts.setProperty("elev", DMIUtil.isMissing(station.getElev())? Double.NaN : new Double(station.getElev()));
-                    //ts.setProperty("loc_type", station.getLoc_type());
-                    //ts.setProperty("accuracy", DMIUtil.isMissing(station.getAccuracy())? null : new Integer(station.getAccuracy()));
-                    //ts.setProperty("st", station.getST());
-                }
-                if ( readData ) {
-                    // Dates are used below.  Don't require for !readData because this may break some
-                    // discovery reads that depend on run-time date/times.
-                    if ( readStart == null ) {
-                        throw new IllegalArgumentException ( "Start date/time has not been specified." );
+                // Transfer the data from the data records to the time series.
+                ts.allocateDataSpace();
+                String transDateTime;
+                double amount;
+                String transFlag;
+                int resultCount; // Number of values aggregated (use if limiting missing?)
+                DateTime date = null;
+                int datePrecision = ts.getDate1().getPrecision();
+                for ( StreamflowTransmission dataRecord : dataRecords.getStreamflowTransmission() ) {
+                    // Date format is m/d/yyyy hh:mm:ss am/pm
+                    transDateTime = dataRecord.getTransDateTime();
+                    amount = dataRecord.getAmount();
+                    transFlag = dataRecord.getTransFlag();
+                    resultCount = dataRecord.getResultCount();
+                    if ( Message.isDebugOn ) {
+                        Message.printDebug(10, routine, "transDateTime=" + transDateTime +
+                        " amount=" + amount + " transFlag=" + transFlag + " resultCount=" + resultCount);
                     }
-                    // Remove time zone if set
-                    readStart = new DateTime(readStart);
-                    if ( intervalBase == TimeInterval.HOUR ) {
-                        // The date string actually needs to have minutes
-                        // TODO SAM 2010-03-03 Remove this code and similar for readEnd if the
-                        // State corrects the handling of dates to allow YYYY-MM-DD HH
-                        readStart.setPrecision(DateTime.PRECISION_MINUTE );
-                        readStart.setMinute(0);
+                    if ( isIrregular || (date == null) ) {
+                        date = parseTransmissionDateTime ( transDateTime, datePrecision, null );
                     }
-                    readStart.setTimeZone("");
-                    String readStartString = readStart.toString();
-                    if ( readEnd == null ) {
-                        throw new IllegalArgumentException ( "End date/time has not been specified." );
+                    else {
+                        // Reuse the date/time
+                        date = parseTransmissionDateTime ( transDateTime, datePrecision, date );
                     }
-                    readEnd = new DateTime(readEnd);
-                    if ( intervalBase == TimeInterval.HOUR ) {
-                        // The date string actually needs to have minutes
-                        readEnd.setPrecision(DateTime.PRECISION_MINUTE );
-                        readEnd.setMinute(59);
+                    if ( transFlag == null ) {
+                        ts.setDataValue(date, amount);
                     }
-                    readEnd.setTimeZone("");
-                    String readEndString = readEnd.toString();
-                    Message.printStatus (2, routine, "Reading time series \"" + tsidentString + "\" for readStart=" +
-                        readStartString + " readEnd=" + readEndString );
-                    // Specify the aggregation interval if specified (otherwise get the raw data).
-                    Holder<SmsStatusHeader> status3 = new Holder<SmsStatusHeader>();
-                    Holder<SmsDisclaimerHeader> disclaimer = new Holder<SmsDisclaimerHeader>();
-                    ArrayOfStreamflowTransmission dataRecords =
-                        service.getColoradoWaterSMSSoap12().getSMSProvisionalData(abbrev, variable,
-                        readStartString, readEndString, aggregation, disclaimer, status3 );
-                    // Check for error
-                    if ( (status3.value != null) && (status3.value.getError() != null) ) {
-                        throw new RuntimeException ( "Error getting provisional data (" +
-                            status3.value.getError().getErrorCode() + ": " + status3.value.getError().getExceptionDescription() + ")." );
-                    }
-                    int dataRecordsSize = 0;
-                    if ( dataRecords != null ) {
-                        dataRecordsSize = dataRecords.getStreamflowTransmission().size();
-                    }
-                    Message.printStatus(2, routine, "Number of data records = " + dataRecordsSize );
-                    // Set the period from the first and last data records
-                    if ( dataRecordsSize > 0 ) {
-                        // Have some data records to process...
-                        StreamflowTransmission dataRecord1 = dataRecords.getStreamflowTransmission().get(0);
-                        //Message.printStatus(2, routine, "First record transDateTime=" + dataRecord1.getTransDateTime());
-                        ts.setDate1(parseTransmissionDateTime(dataRecord1.getTransDateTime(),0,null));
-                        ts.setDate1Original(ts.getDate1());
-                        StreamflowTransmission dataRecord2 = dataRecords.getStreamflowTransmission().get(
-                            dataRecords.getStreamflowTransmission().size() - 1);
-                        ts.setDate2(parseTransmissionDateTime(dataRecord2.getTransDateTime(),0,null));
-                        ts.setDate2Original(ts.getDate2());
-                        // Transfer the data from the data records to the time series.
-                        ts.allocateDataSpace();
-                        String transDateTime;
-                        double amount;
-                        String transFlag;
-                        int resultCount; // Number of values aggregated (use if limiting missing?)
-                        DateTime date = null;
-                        int datePrecision = ts.getDate1().getPrecision();
-                        for ( StreamflowTransmission dataRecord : dataRecords.getStreamflowTransmission() ) {
-                            // Date format is m/d/yyyy hh:mm:ss am/pm
-                            transDateTime = dataRecord.getTransDateTime();
-                            amount = dataRecord.getAmount();
-                            transFlag = dataRecord.getTransFlag();
-                            resultCount = dataRecord.getResultCount();
-                            if ( Message.isDebugOn ) {
-                                Message.printDebug(10, routine, "transDateTime=" + transDateTime +
-                                " amount=" + amount + " transFlag=" + transFlag + " resultCount=" + resultCount);
-                            }
-                            if ( isIrregular || (date == null) ) {
-                                date = parseTransmissionDateTime ( transDateTime, datePrecision, null );
-                            }
-                            else {
-                                // Reuse the date/time
-                                date = parseTransmissionDateTime ( transDateTime, datePrecision, date );
-                            }
-                            if ( transFlag == null ) {
-                                ts.setDataValue(date, amount);
-                            }
-                            else {
-                                ts.setDataValue(date, amount, transFlag, 0);
-                            }
-                        }
+                    else {
+                        ts.setDataValue(date, amount, transFlag, 0);
                     }
                 }
             }
@@ -549,7 +556,7 @@ throws Exception
 
 /**
 TODO SAM 2009-11-23 May not be used since readTimeSeriesHeaderObjects is used for browsing and
-single ReadTimeSeries is used for single time series/
+single ReadTimeSeries is used for single time series.
 Read a list of time series.
 */
 /*
