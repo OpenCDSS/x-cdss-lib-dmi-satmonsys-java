@@ -389,22 +389,24 @@ throws Exception {
 	else {
 		// TODO (JTS - 2005-12-14) change "local" to a static final string in HydroBase_Util so 
 		// that it can be referenced everywhere by a variable.
+		// Ports if used are 21784 (latest DWR convention) and 1433 (SQL Server default)
+		// Ports will be ignored if a SQL Server instance is used with ServerName\InstanceName
 		if (database_server.equalsIgnoreCase("local")
 		    || IOUtil.getProgramHost().equalsIgnoreCase(database_server)) {
 		   	// Connecting to the local machine.  Try the MSDE port first.
 			database_server = IOUtil.getProgramHost();
-			__localPorts = new int[3];
-			__localPorts[0] = 5758;
-			__localPorts[1] = 21784;
-			__localPorts[2] = 1433;
+			__localPorts = new int[2];
+			//__localPorts[0] = 5758;
+			__localPorts[0] = 21784;
+			__localPorts[1] = 1433;
 			port = __localPorts[0];
 		}
 		else {
 		    // Connecting to a remote machine.  Try the SQL Server port first.
-			__localPorts = new int[3];
-			__localPorts[0] = 1433;
-			__localPorts[1] = 5758;
-			__localPorts[2] = 21784;
+			__localPorts = new int[2];
+			__localPorts[0] = 21784;
+			__localPorts[1] = 1433;
+			//__localPorts[1] = 5758;
 			port = __localPorts[0];
 		}
 	}
@@ -1869,19 +1871,26 @@ super.open() is called first in this method, prior to any other setup.
 */
 public void open() 
 throws Exception, java.sql.SQLException {
-	if (__localPorts == null) {
-		// Use default port numbers
+	if (getDatabaseServer().indexOf('\\') >= 0) {
+		// SQL Server instance - port will not be used in connectio URL
 		super.open();
 	}
 	else {
-		for ( int i = 0; i < __localPorts.length; i++ ) {
-			// Try each port number that could be used.
-			try {
-				setPort(__localPorts[i]);
-				super.open();
-				break;
-			}
-			catch (Throwable t) {
+		// Use ports to open
+		if (__localPorts == null) {
+			// Use default port numbers
+			super.open();
+		}
+		else {
+			for ( int i = 0; i < __localPorts.length; i++ ) {
+				// Try each port number that could be used.
+				try {
+					setPort(__localPorts[i]);
+					super.open();
+					break;
+				}
+				catch (Throwable t) {
+				}
 			}
 		}
 	}
