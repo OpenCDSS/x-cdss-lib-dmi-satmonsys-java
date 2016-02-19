@@ -25,7 +25,9 @@ public DataStore create ( PropList props )
     }
     String serviceRootURI = props.getValue ( "ServiceRootURI" );
     try {
-        return new ColoradoWaterSMSDataStore ( name, description, new URI(serviceRootURI) );
+    	ColoradoWaterSMSDataStore ds = new ColoradoWaterSMSDataStore ( name, description, new URI(serviceRootURI) );
+    	ds.setProperties(props);
+    	return ds;
     }
     catch ( Exception e ) {
         throw new RuntimeException ( e );
