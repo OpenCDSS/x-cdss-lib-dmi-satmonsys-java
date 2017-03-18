@@ -35,7 +35,7 @@ private static String __class = "ColoradoWaterSMSAPI";
 /**
 Cache of distinct list of station variable types.
 */
-private static List<String> __distinctStationVariableList = new Vector();
+private static List<String> __distinctStationVariableList = new Vector<String>();
 
 /**
 Return the cached list of distinct station variables, for all real-time stations.
@@ -233,7 +233,7 @@ public static List<HydroBase_StationGeolocMeasType> readTimeSeriesHeaderObjects 
     String abbrevReq, String stationNameReq, String dataProviderReq, String dataTypeReq,
     String timestepReq, DateTime readStart, DateTime readEnd, boolean readData )
 throws Exception
-{   List<HydroBase_StationGeolocMeasType> tslist = new Vector();
+{   List<HydroBase_StationGeolocMeasType> tslist = new Vector<HydroBase_StationGeolocMeasType>();
     // Used below...
     String readStartString = null;
     if ( readStart != null ) {
