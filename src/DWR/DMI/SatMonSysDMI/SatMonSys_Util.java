@@ -191,6 +191,9 @@ throws Exception {
 
 	// Get the input type...
 	int inputType = filter.getInputType();
+	if ( filter.getChoiceTokenType() > 0 ) {
+		inputType = filter.getChoiceTokenType();
+	}
 	
 	// Get the internal where.
 
