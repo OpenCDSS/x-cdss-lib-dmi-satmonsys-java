@@ -1,22 +1,24 @@
 # cdss-lib-dmi-satmonsys-java #
 
-This repository contains Colorado's Decision Support Systems (CDSS) Java library for
+This repository contains
+[Colorado's Decision Support Systems (CDSS)](https://www.colorado.gov/cdss)
+Java library for
 the State of Colorado's Satellite Monitoring System database.
-**This library may be phased out because new web services provide equivalent functionality.**
+**This library will be phased out because new web services provide equivalent functionality.**
 
 Eclipse is used for development and repositories currently contain Eclipse project files to facilitate
 setting up the Eclipse development environment.
 Development on library code usually occurs while developing an application such as TSTool,
 rather than the library alone, because software requirements come from application development.
 
-This software is being migrated to an open source software project as part of the OpenCDSS project.
 See the following online resources:
 
-* [CDSS](http://cdss.state.co.us)
-* [OpenCDSS](http://learn.openwaterfoundation.org/cdss-website-opencdss/)
+* [Colorado's Decision Support Systems](https://www.colorado.gov/cdss)
+* [OpenCDSS](http://learn.openwaterfoundation.org/cdss-website-opencdss/) - currently
+hosted on the Open Water Foundation website while the OpenCDSS server is being configured
 * [TSTool Developer Documentation](http://learn.openwaterfoundation.org/cdss-app-tstool-doc-dev/) - example of application that uses this library
 
-The developer documentation and guidelines will be updated as the development environment is used in development.  See the following sections in this page:
+See the following sections in this page:
 
 * [Repository Folder Structure](#repository-folder-structure)
 * [Repository Dependencies](#repository-dependencies)
@@ -66,8 +68,8 @@ with minimal additional configuration (for example see TSTool Developer document
 
 |**Repository**|**Description**|
 |----------------------------------------------------------------------------------------|----------------------------------------------------|
-|[`cdss-lib-common-java`](https://github.com/OpenWaterFoundation/cdss-lib-common-java)   |Library of core utility code used by multiple repos.|
-|[`cdss-lib-dmi-hydrobase-java`](https://github.com/OpenWaterFoundation/cdss-lib-dmi-hydrobase-java)   |Library for Colorado HydroBase database.|
+|[`cdss-lib-common-java`](https://github.com/OpenCDSS/cdss-lib-common-java)   |Library of core utility code used by multiple repos.|
+|[`cdss-lib-dmi-hydrobase-java`](https://github.com/OpenCDSS/cdss-lib-dmi-hydrobase-java)   |Library for Colorado HydroBase database.|
 
 ### Repositories that Depend on this Repository ###
 
@@ -75,8 +77,8 @@ The following repositories are known to depend on this repository:
 
 |**Repository**|**Description**|
 |----------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
-|[`cdss-app-tstool-main`](https://github.com/OpenWaterFoundation/cdss-app-tstool-main)                           |Main TSTool application code.|
-|[`cdss-lib-processor-ts-java`](https://github.com/OpenWaterFoundation/cdss-lib-processor-ts-java)               |Library of processing code used by TSTool.|
+|[`cdss-app-tstool-main`](https://github.com/OpenCDSS/cdss-app-tstool-main)                           |Main TSTool application code.|
+|[`cdss-lib-processor-ts-java`](https://github.com/OpenCDSS/cdss-lib-processor-ts-java)               |Library of processing code used by TSTool.|
 
 ## Development Environment Folder Structure ##
 
@@ -116,8 +118,7 @@ Contributions to this project can be submitted using the following options:
 1. Software developers with commit privileges can write to this repository
 as per normal OpenCDSS development protocols.
 2. Post an issue on GitHub with suggested change.  Provide information using the issue template.
-3. Email a development contact.
-4. Fork the repository, make changes, and do a pull request.
+3. Fork the repository, make changes, and do a pull request.
 Contents of the current master branch should be merged with the fork to minimize
 code review before committing the pull request.
 
@@ -125,8 +126,11 @@ See also the [OpenCDSS / protocols](http://learn.openwaterfoundation.org/cdss-we
 
 ## License ##
 
-A license for the software is being determined as part of the OpenCDSS project.
-GPL 3.0 has been recommended.
+Copyright Colorado Department of Natural Resources.
+
+The software is licensed under GPL v3+. See the [LICENSE.md](LICENSE.md) file.
+Because the code is being phased out, copyright/license notice has not been
+added to each source file.
 
 ## Contact ##
 
