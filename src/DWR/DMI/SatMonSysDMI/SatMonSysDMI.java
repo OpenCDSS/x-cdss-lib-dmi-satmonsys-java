@@ -1754,8 +1754,8 @@ public SatMonSys_AlertSubscriber getCurrentSubscriber() {
 Returns information about the properties of the current database.
 @return a Vector of Strings with information about the current database.
 */
-public List getDatabaseProperties () {
-	List v = new Vector();
+public List<String> getDatabaseProperties () {
+	List<String> v = new Vector<String>();
 	v.add("SatMonSys Database Host: " + getDatabaseServer());
 	if (getODBCName() != null) {
 		v.add("ODBC Data Source Name:  " +
