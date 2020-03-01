@@ -46,6 +46,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Vector;
 
+import DWR.DMI.HydroBaseDMI.HydroBase_Util;
 import RTi.DMI.DMI;
 import RTi.DMI.DMIUtil;
 import RTi.DMI.DMISelectStatement;
@@ -996,7 +997,7 @@ boolean showArchiveData) {
 		delta = false;
 		
 		current = true;
-		if (!DMIUtil.isMissing(data.getDiv())) {
+		if (!DMIUtil.isMissing(data.getDiv()) && !HydroBase_Util.isMissing(data.getDiv())) {
 			current = false;
 		}
 
