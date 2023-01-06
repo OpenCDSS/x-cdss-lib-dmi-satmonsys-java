@@ -1,10 +1,17 @@
 # cdss-lib-dmi-satmonsys-java #
 
+**This library is no longer used.
+The [cdss-lib-dmi-hydrobase-rest-java](https://github.com/OpenCDSS/cdss-lib-dmi-hydrobase-rest-java)
+library is now used to access real-time and historical data.
+On 2023-01-05 this repository was renamed from cdss-lib-dmi-satmonsys-java to x-cdss-lib-dmi-satmonsys-java
+and should no longer be included in software projects.**
+
+----
+
 This repository contains
 [Colorado's Decision Support Systems (CDSS)](https://www.colorado.gov/cdss)
 Java library for
 the State of Colorado's Satellite Monitoring System database.
-**This library will be phased out because new web services provide equivalent functionality.**
 
 Eclipse is used for development and repositories currently contain Eclipse project files to facilitate
 setting up the Eclipse development environment.
